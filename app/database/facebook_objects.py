@@ -55,8 +55,11 @@ class FbPosts(DynamicDocument):
     meta = {'collection': 'facebook'}  # Otherwise documents will be saved in the 'fb_post' collection. (Default collection is classname in smallcaps
     if TESTING:  # Swith to the test database, otherwise use default one.
         meta['db_alias'] = 'test'
+    else:
+        meta['db_alias'] = 'default'
+    print meta
 
-    id = ObjectIdField(db_field=('_id'), required=False, primary_key=True)
+    id = ObjectIdField(db_field='_id', required=False, primary_key=True)
     created_time = IntField(min_value=0, max_value=5000000000, default=-1)
     postid = StringField(db_field='id', required=True)
     profile = EmbeddedDocumentField(document_type=Profile)
@@ -87,7 +90,8 @@ class FbPosts(DynamicDocument):
 
         """
 
-        q = cls.objects()
+        q = FbPosts.objects()
+        print q
         if id: q = q(id=id)
         if pageid: q = q(profile__id=pageid)
         if since: q = q(created_time__gte=since)
