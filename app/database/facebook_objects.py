@@ -46,7 +46,7 @@ class Comments(DynamicEmbeddedDocument):
     comment_count = IntField()
 
 
-class FbPost(DynamicDocument):
+class FbPosts(DynamicDocument):
     """
         This is probably a temporary class to read the posts saved by the old scraper in the 'politics/facebook' collection
     """
@@ -101,7 +101,7 @@ class FbPost(DynamicDocument):
 # @profile()
 @timecall()
 def test():
-    x = FbPost
+    x = FbPosts
     # for i in x.objects(shares__count__gte=13000):
     # This doesn't work ! see: https://docs.mongodb.com/manual/reference/operator/query/size/#_S_size. "create a counter field that you increment when you add elements to a field."
 
