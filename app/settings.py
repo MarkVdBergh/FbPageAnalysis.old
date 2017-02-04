@@ -2,5 +2,5 @@
 
 # DATABASE:
 TESTING = True
-PRODUCTION_DB = 'production'  # should be 'politics'
+PRODUCTION_DB = 'Production'  # should be 'politics'
 TESTING_DB = 'test'

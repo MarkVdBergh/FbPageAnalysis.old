@@ -72,8 +72,8 @@ class FbPost(DynamicDocument):
     type = StringField()
     status_type = StringField()
     story = StringField()
-
-    def get_posts(self, id=None, pageid=None, since=None, until=None, **query):
+    @classmethod
+    def get_posts(cls, id=None, pageid=None, since=None, until=None, **query):
         """
             Method to get posts from the database and returns a queryset. All arguments are optional. No arguments returns all the posts from the database.
 
@@ -87,9 +87,9 @@ class FbPost(DynamicDocument):
 
         """
 
-        q = FbPost.objects()
+        q = cls.objects()
         if id: q = q(id=id)
-        if pageid: q = q(pageid=pageid)
+        if pageid: q = q(profile__id=pageid)
         if since: q = q(created_time__gte=since)
         if until: q = q(created_time__lte=until)
         return q
