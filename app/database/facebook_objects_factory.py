@@ -70,7 +70,7 @@ class Comments_SubFactoy(MongoEngineFactory):
 
 class FbPost_Realistic_Factory(MongoEngineFactory):
     class Meta:
-        model = FbPost
+        model = FbPosts
         exclude = ('_postid1', '_postid2')
 
     id = Sequence(lambda n: ObjectId('1234567890abcdef%08d' % n))

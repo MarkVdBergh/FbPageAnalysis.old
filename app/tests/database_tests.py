@@ -7,13 +7,13 @@ import pytz
 from bson import ObjectId
 from mongoengine import ValidationError
 
-from app.database.facebook_objects import FbPost, Profile
+from app.database.facebook_objects import FbPosts, Profile
 
 
 class Test_FbPosts_Mongo(unittest.TestCase):
     """
-        Unittest for FbPost class.
-        The FbPost class is used temporarly for loading facebook posts from the 'politics/facebook' database.
+        Unittest for FbPosts class.
+        The FbPosts class is used temporarly for loading facebook posts from the 'politics/facebook' database.
     """
 
     def setUp(self):
@@ -21,14 +21,14 @@ class Test_FbPosts_Mongo(unittest.TestCase):
         pass
 
     def tearDown(self):
-        FbPost.drop_collection()
+        FbPosts.drop_collection()
         print 'Collection dropped ...'
         pass
 
     # @unittest.skip('')
     def test_validation_errors(self):
         # Check validation errors. 'postid', 'id' is required and 'created_time' has min and max.
-        post = FbPost()
+        post = FbPosts()
         with self.assertRaisesRegexp(ValidationError, r"^.*required: \['postid', 'id'] .*too small: \['created_time'].*"):
             post.save(validate=True)
         post.id = ObjectId('000000000000000000000000')
@@ -50,17 +50,17 @@ class Test_FbPosts_Mongo(unittest.TestCase):
                 id = ObjectId('00000000000000000000000{}'.format(i))
                 postid = str(i)
                 profile = Profile(id=str(i // 3))
-                fbp = FbPost(id=id, postid=postid, created_time=timestamp, profile=profile)
+                fbp = FbPosts(id=id, postid=postid, created_time=timestamp, profile=profile)
                 fbp.save(validate=True)
                 i += 1
                 posts.append(fbp)
 
         # Test get all posts
-        q = FbPost.get_posts()
+        q = FbPosts.get_posts()
         [self.assertEqual(q[i].to_json(), posts[i].to_json()) for i in xrange(len(posts))]
 
         # Test get post by id
-        [self.assertEqual(FbPost.get_posts(id=ObjectId('00000000000000000000000{}'.format(i)))[0].to_json(), posts[i].to_json()) for i in xrange(len(posts))]
+        [self.assertEqual(FbPosts.get_posts(id=ObjectId('00000000000000000000000{}'.format(i)))[0].to_json(), posts[i].to_json()) for i in xrange(len(posts))]
 
 
 

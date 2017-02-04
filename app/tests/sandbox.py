@@ -3,11 +3,11 @@ from pprint import pprint
 
 from bson import ObjectId
 
-from app.database.facebook_objects import FbPost
+from app.database.facebook_objects import FbPosts
 
-post = FbPost()
+post = FbPosts()
 post.id = ObjectId("5893bbd54520006bc3fad5c1")
 post.created_time = 9991235556703
 
-q = FbPost.get_posts(profile__id='571227032971640')
+q = FbPosts.get_posts(profile__id='571227032971640')
 pprint(q[398].to_json())
