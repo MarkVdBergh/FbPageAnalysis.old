@@ -5,11 +5,11 @@ from datetime import datetime, timedelta
 
 import pytz
 from bson import ObjectId
-from mongoengine import ValidationError
+from mongoengine import ValidationError, connect
 
 from app.database.facebook_objects import FbPosts, Profile
 
-
+connect(db='test') # Assure we don't delete the politics/facebook collection !!!
 class Test_FbPosts_Mongo(unittest.TestCase):
     """
         Unittest for FbPosts class.
@@ -21,7 +21,7 @@ class Test_FbPosts_Mongo(unittest.TestCase):
         pass
 
     def tearDown(self):
-        FbPosts.drop_collection()
+        # FbPosts.drop_collection()
         print 'Collection dropped ...'
         pass
 
