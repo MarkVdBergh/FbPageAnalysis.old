@@ -5,7 +5,7 @@ from app.database.stats_objects import PostStats, Users, Pages, PostTexts
 # connect('test')
 
 def create_post_stats(id=None, pageid=None, since=None, until=None, **query):
-    q_fb_posts = FbPosts.get_posts(id=id, pageid=pageid, since=since, until=until, **query)
+    q_fb_posts = FbPosts.get_posts(oid=id, pageid=pageid, since=since, until=until, **query)
 
     print 1111111111
 

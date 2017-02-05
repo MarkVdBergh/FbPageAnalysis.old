@@ -1,13 +1,14 @@
 import pprint
 
 from mongoengine import EmbeddedDocument, StringField, DictField, BooleanField, URLField, DynamicEmbeddedDocument, IntField, EmbeddedDocumentField, \
-    EmbeddedDocumentListField, DynamicDocument, ObjectIdField, register_connection
+    EmbeddedDocumentListField, DynamicDocument, register_connection
 from profilehooks import timecall
 
 from app.settings import TESTING, TESTING_DB, PRODUCTION_DB
 
 register_connection(alias='test', name=TESTING_DB)
 register_connection(alias='default', name=PRODUCTION_DB)
+print TESTING, TESTING_DB, PRODUCTION_DB
 
 
 # ToDo: connect() seems unnecessary. It uses the default db automatically?
@@ -59,15 +60,17 @@ class FbPosts(DynamicDocument):
         meta['db_alias'] = 'default'
     print meta
 
-    id_ = ObjectIdField(db_field='_id', primary_key=True)
+    # oid = ObjectIdField(db_field='_id', primary_key=True)
     created_time = IntField(min_value=0, max_value=5000000000, default=-1)
     postid = StringField(db_field='id', required=True)
     profile = EmbeddedDocumentField(document_type=Profile)
     reactions = EmbeddedDocumentListField(document_type=Reactions)
     comments = EmbeddedDocumentListField(document_type=Comments)
     shares = DictField()
-    from_user = EmbeddedDocumentField(document_type=User)
-    to_user = EmbeddedDocumentListField(db_field='to',document_type=User)
+    from_user = EmbeddedDocumentField(db_field='from', document_type=User)
+    to_user = DictField()
+    # ToDo: Doesn't work !!!
+    # to_user=EmbeddedDocumentListField(db_field='to', document_type=User)
     message = StringField()
     picture = StringField()
     name = StringField()
@@ -75,13 +78,14 @@ class FbPosts(DynamicDocument):
     type = StringField()
     status_type = StringField()
     story = StringField()
+
     @classmethod
-    def get_posts(cls, id=None, pageid=None, since=None, until=None, **query):
+    def get_posts(cls, oid=None, pageid=None, since=None, until=None, **query):
         """
             Method to get posts from the database and returns a queryset. All arguments are optional. No arguments returns all the posts from the database.
 
-            :param id: ObjectId()
-            :param pageid: str: the profile.id of the page
+            :param oid: ObjectId()
+            :param pageid: str: the profile.oid of the page
             :param since: int: timestamp. If no 'until', returns all posts since 'since'
             :param until: int: timestamp: If no 'since', returns all posts until 'until'
             :param query: dict: flexible mongodb query
@@ -91,7 +95,7 @@ class FbPosts(DynamicDocument):
         """
 
         q = cls.objects(**query)
-        if id: q = q(id=id)
+        if oid: q = q(oid=oid)
         if pageid: q = q(profile__id=pageid)
         if since: q = q(created_time__gte=since)
         if until: q = q(created_time__lte=until)
@@ -119,7 +123,7 @@ def test():
 
 
 
-    # j=json.dumps({'id':9999,'profile':{'id':100,'name':'MMMM'}})
+    # j=json.dumps({'oid':9999,'profile':{'oid':100,'name':'MMMM'}})
     # y=x.from_json(j)
     # print y.to_json()
     # x.set_collection('facebook_test')

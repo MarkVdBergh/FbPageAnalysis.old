@@ -2,14 +2,21 @@ from __future__ import absolute_import
 
 import unittest
 from datetime import datetime, timedelta
+from pprint import pprint
 
 import pytz
 from bson import ObjectId
-from mongoengine import ValidationError, connect
+from mongoengine import ValidationError, connect, register_connection
+from mongoengine.context_managers import switch_db
 
-from app.database.facebook_objects import FbPosts, Profile
+from app.database.facebook_objects import Profile, FbPosts
+from app.settings import PRODUCTION_DB, TESTING_DB
 
-connect(db='test') # Assure we don't delete the politics/facebook collection !!!
+register_connection(alias='test', name=TESTING_DB)
+register_connection(alias='default', name=PRODUCTION_DB)
+connect(db='test')  # Assure we don't delete the politics/facebook collection !!!
+
+
 class Test_FbPosts_Mongo(unittest.TestCase):
     """
         Unittest for FbPosts class.
@@ -27,9 +34,9 @@ class Test_FbPosts_Mongo(unittest.TestCase):
 
     # @unittest.skip('')
     def test_validation_errors(self):
-        # Check validation errors. 'postid', 'id' is required and 'created_time' has min and max.
+        # Check validation errors. 'postid', 'oid' is required and 'created_time' has min and max.
         post = FbPosts()
-        with self.assertRaisesRegexp(ValidationError, r"^.*required: \['postid', 'id'] .*too small: \['created_time'].*"):
+        with self.assertRaisesRegexp(ValidationError, r"^.*required: \['postid', 'oid'] .*too small: \['created_time'].*"):
             post.save(validate=True)
         post.id = ObjectId('000000000000000000000000')
         post.created_time = 1041379300
@@ -59,14 +66,43 @@ class Test_FbPosts_Mongo(unittest.TestCase):
         q = FbPosts.get_posts()
         [self.assertEqual(q[i].to_json(), posts[i].to_json()) for i in xrange(len(posts))]
 
-        # Test get post by id
-        [self.assertEqual(FbPosts.get_posts(id=ObjectId('00000000000000000000000{}'.format(i)))[0].to_json(), posts[i].to_json()) for i in xrange(len(posts))]
+        # Test get post by oid
+        [self.assertEqual(FbPosts.get_posts(oid=ObjectId('00000000000000000000000{}'.format(i)))[0].to_json(), posts[i].to_json()) for i in xrange(len(posts))]
 
 
 
 
         # sleep(20)
 
+
+class CreateTestDb(object):
+    def __init__(self, page_ids=list(), limit=0):
+        if page_ids:
+            self.page_ids = page_ids
+        else:
+            self.page_ids = ['56605856504', '231742536958']
+        if limit:
+            self.limit = limit
+        else:
+            self.limit = 1
+        register_connection(alias='test', name='test')
+        register_connection(alias='politics', name='politics')
+
+    def create_testdb(self):
+        for pid in self.page_ids:
+            with switch_db(FbPosts, 'politics') as FbPostsProduction:
+                query = FbPostsProduction.get_posts(pageid=pid, since=1485008617)
+                query = query.limit(self.limit)
+                # query = query.order_by('created_time') # makes it very slow
+                print pprint(query.explain())
+                for q in query:
+
+                    with switch_db(FbPosts, 'test') as FbPostsTest:
+                        fbp_test=FbPostsTest()
+                        for at in q:
+                            fbp_test[at]= q[at]
+                        fbp_test.save()
+                    print q.id, q.profile.name
 
 
 if __name__ == '__main__':

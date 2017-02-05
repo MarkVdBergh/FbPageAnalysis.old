@@ -8,9 +8,9 @@ class Fbstats(object):
         pass
 
     def makeId(cls):  # cls ???  automatically when @classmethod
-        # classmethod to make my own id to use in other documents as refference to this document. Also for easier find?
+        # classmethod to make my own oid to use in other documents as refference to this document. Also for easier find?
         # class has the class variables from Master class and Parent class: documents, status_df and xxx
-        # id = ObjectId('abcabcabcabc')  # bson it must be a 12-byte input or a 24-character hex string
+        # oid = ObjectId('abcabcabcabc')  # bson it must be a 12-byte input or a 24-character hex string
         return 'xxx'
 
     @classmethod
@@ -42,9 +42,9 @@ class FbPostStats(Fbstats):
         # Restructure so that df.to_dict or df.to_json gives the right mongo doc ???
 
         # Why arrays iso int for stats? Consistency with the other statsclas pages?
-        post_stats_doc = {'id': '',  # str: Generated id
-                          'pageid': 'xxx',  # str: Facebook page id ('xxxxxxx')
-                          'postid': 'xxx',  # str: Facebook post id ('xxxxxxx_yyyyy')
+        post_stats_doc = {'oid': '',  # str: Generated oid
+                          'pageid': 'xxx',  # str: Facebook page oid ('xxxxxxx')
+                          'postid': 'xxx',  # str: Facebook post oid ('xxxxxxx_yyyyy')
                           'created_dt': -9,  # int: Facebook timestamp time when post was posted
                           'updated_dt': -9,  # int: timestamp time when the document was last updated
                           'type': 'xxx',  # str: Facebook post type ('photo', 'link', ...)
@@ -61,18 +61,18 @@ class FbPostStats(Fbstats):
                                                   'n_wow': 0,  # int: the nr of times the post was wowed
                                                   'n_sad': 0,  # int: the nr of times the post was saded
                                                   'n_angry': 0,  # int: the nr of times the post was angried
-                                                  'u_like': [],  # list of str: the Facebook id of the users that liked the post
-                                                  'u_love': [],  # list of str: the Facebook id of the users that loved the post
-                                                  'u_haha': [],  # list of str: the Facebook id of the users that haha-ed the post
-                                                  'u_wow': [],  # list of str: the Facebook id of the users that wowed the post
-                                                  'u_sad': [],  # list of str: the Facebook id of the users that saded the post
-                                                  'u_angry': [],  # list of str: the Facebook id of the users that angy-edthe post
+                                                  'u_like': [],  # list of str: the Facebook oid of the users that liked the post
+                                                  'u_love': [],  # list of str: the Facebook oid of the users that loved the post
+                                                  'u_haha': [],  # list of str: the Facebook oid of the users that haha-ed the post
+                                                  'u_wow': [],  # list of str: the Facebook oid of the users that wowed the post
+                                                  'u_sad': [],  # list of str: the Facebook oid of the users that saded the post
+                                                  'u_angry': [],  # list of str: the Facebook oid of the users that angy-edthe post
                                                   },
                                     'comments': {'comment_id': [],  # list of str: list of the Facebook comments ids
                                                  'comment_dt': [],  # list of datetime: list of times a comment was made
                                                  'u_comment': [],  # list of str: the Facebook ids of the users that commented
                                                  'n_comment_like': [],  # list of int: list of the nr of times the comment was liked
-                                                 'u_comment_like': []  # list of str: list with Facebook id from the users that liked a comment
+                                                 'u_comment_like': []  # list of str: list with Facebook oid from the users that liked a comment
                                                  },
                                     'users': {'u_unique': [],  # list of str: list of Facbook ids of unique people that reacted to the post, commented or liked a comment
                                               'u_unique_comment': [],  # list of str: list of Facbook ids of unique people that commented to the post
@@ -83,9 +83,9 @@ class FbPostStats(Fbstats):
                                      'discussion': 0  # int: f(n_comments, u_unique_comment, own_comment).
                                      }, }
         # metadata
-        post_stats_doc['id'] = self.makeId()
-        post_stats_doc['pageid'] = self.fb_doc['profile']['id']
-        post_stats_doc['postid'] = self.fb_doc['id']
+        post_stats_doc['oid'] = self.makeId()
+        post_stats_doc['pageid'] = self.fb_doc['profile']['oid']
+        post_stats_doc['postid'] = self.fb_doc['oid']
         # post_stats_doc['created_dt'] = mt.timestamp_to_datetime(self.fb_doc['created_time']),
         # post_stats_doc['updated_dt'] = mt.utc_now()
         post_stats_doc['type'] = self.fb_doc['type']
@@ -95,16 +95,16 @@ class FbPostStats(Fbstats):
 
         # stat/reaction
         if self.fb_doc['reactions']:  # <> []
-            _df_reac = pd.DataFrame(self.fb_doc['reactions'])[['id', 'type']]
+            _df_reac = pd.DataFrame(self.fb_doc['reactions'])[['oid', 'type']]
             _df_reac['type'] = _df_reac['type'].str.lower()  # LIKE->like
             _dfg = _df_reac.groupby(['type'])  # tuple of (str,df)
             # n_reactions
-            _fb_reactions = _dfg.count().to_dict()['id']
+            _fb_reactions = _dfg.count().to_dict()['oid']
             # Maybe better df['type'] = 'n_'+df['type'] ????
             _n_reactions = {'n_' + k: _fb_reactions[k] for k in _fb_reactions}  # Rename the keys (like -> n_like)
             # u_reaction
             # ToDo: Check if this puts the user ids with correct keys
-            _u_reactions = {'n_' + _react[0]: [r for r in _react[1]['id']] for _react in _dfg}  # _react is a tuple (type, series). r is the string id from the user
+            _u_reactions = {'n_' + _react[0]: [r for r in _react[1]['oid']] for _react in _dfg}  # _react is a tuple (type, series). r is the string oid from the user
             # Update otherwise I overwrite the ['stats']['connections']
             post_stats_doc['stats']['reactions'].update(_n_reactions)
             post_stats_doc['stats']['reactions'].update(_u_reactions)
@@ -116,10 +116,10 @@ class FbPostStats(Fbstats):
             post_stats_doc['stats']['tn_comment_like'] = _df_comm['like_count'].sum()
             post_stats_doc['stats']['tn_comment'] = _df_comm.shape[0]
             # comment
-            post_stats_doc['stats']['comments']['comment_id'] = _df_comm['id'].tolist()
+            post_stats_doc['stats']['comments']['comment_id'] = _df_comm['oid'].tolist()
             # DATE PROBLEM !!!! (timestamp)
             # post_stats_doc['stats']['comments']['comment_dt'] = pd.to_datetime(_df_comm['created_time'], box=True,utc=True, unit='s').tolist()
-            post_stats_doc['stats']['comments']['u_comment'] = [comm['from']['id'] for comm in self.fb_doc['comments']]
+            post_stats_doc['stats']['comments']['u_comment'] = [comm['from']['oid'] for comm in self.fb_doc['comments']]
             post_stats_doc['stats']['comments']['n_comment_like'] = _df_comm['like_count'].tolist()
 
             try:  # UGLY
@@ -127,7 +127,7 @@ class FbPostStats(Fbstats):
                 # users that liked a comment
                 _likes = _df_comm['likes'].dropna()
                 _lst = []
-                [_lst.extend(map(lambda x: x['id'], _lks['data'])) for _lks in _likes]  # Updates the list 'lst'
+                [_lst.extend(map(lambda x: x['oid'], _lks['data'])) for _lks in _likes]  # Updates the list 'lst'
                 post_stats_doc['stats']['comments']['u_comment_like'] = _lst
             except:
                 pass

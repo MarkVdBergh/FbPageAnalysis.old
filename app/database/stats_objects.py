@@ -6,6 +6,7 @@ from mongoengine import StringField, BooleanField, URLField, register_connection
 from app.settings import TESTING_DB, PRODUCTION_DB
 
 register_connection(alias='test', name=TESTING_DB)
+register_connection(alias='default', name=PRODUCTION_DB)
 
 """
         Get a set of posts via FbPosts. Iterate each post and save processed data to the appropriate collections.
@@ -18,11 +19,9 @@ register_connection(alias='test', name=TESTING_DB)
             - histogram reactons, shares, comments
 """
 
-register_connection(alias='default', name=PRODUCTION_DB)
-
 
 class Pages(Document):
-    meta = {'collection': 'facebook', 'indexes': ['pageid', '$name', 'users']}
+    # meta = {'collection': 'facebook', 'indexes': ['pageid', '$name', 'users']}
 
     id_ = ObjectIdField(db_field='_id', primary_key=True)
     page_id = StringField(db_field='pageid')
@@ -36,13 +35,16 @@ class Pages(Document):
         p.name = fbp.profile.name
         return cls.id_
 
+    def upsert_page(self):
+        pass
+
     def __unicode__(self):
         return self.to_json()
 
 
 class Users(Document):
     id_ = ObjectIdField(db_field='_id', primary_key=True)
-    userid = StringField()
+    user_id = StringField()
     name = StringField()
     picture = URLField()
     is_silhouette = BooleanField()
@@ -54,6 +56,10 @@ class Users(Document):
 
         return self.id_
 
+    def upsert_user(self):
+        pass
+        return self.id_
+
     def __unicode__(self):
         return self.to_json()
 
@@ -62,7 +68,7 @@ class PostStat(Document):
     id_ = ObjectIdField(db_field='_id', primary_key=True)
 
     shares = IntField()
-    reactions = ListField(ReferenceField(Texts))
+    reactions = ListField(ReferenceField('Texts'))
 
     type = StringField()
     status_type = StringField()
@@ -91,7 +97,7 @@ class Posts(Document):
     updated = DateTimeField(datetime.utcnow())
 
     created = DateTimeField()
-    post_id = StringField(db_field='id', required=True)
+    post_id = StringField(db_field='oid', required=True)
 
     # Reference fields
     page_id = ReferenceField(Pages)
