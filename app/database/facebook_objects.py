@@ -59,7 +59,7 @@ class FbPosts(DynamicDocument):
         meta['db_alias'] = 'default'
     print meta
 
-    id = ObjectIdField(db_field='_id', required=False, primary_key=True)
+    id_ = ObjectIdField(db_field='_id', primary_key=True)
     created_time = IntField(min_value=0, max_value=5000000000, default=-1)
     postid = StringField(db_field='id', required=True)
     profile = EmbeddedDocumentField(document_type=Profile)
@@ -67,7 +67,7 @@ class FbPosts(DynamicDocument):
     comments = EmbeddedDocumentListField(document_type=Comments)
     shares = DictField()
     from_user = EmbeddedDocumentField(document_type=User)
-    to_user = EmbeddedDocumentField(document_type=User)
+    to_user = EmbeddedDocumentListField(db_field='to',document_type=User)
     message = StringField()
     picture = StringField()
     name = StringField()
@@ -90,8 +90,7 @@ class FbPosts(DynamicDocument):
 
         """
 
-        q = FbPosts.objects()
-        print q
+        q = cls.objects(**query)
         if id: q = q(id=id)
         if pageid: q = q(profile__id=pageid)
         if since: q = q(created_time__gte=since)
