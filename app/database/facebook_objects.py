@@ -68,9 +68,9 @@ class FbPosts(DynamicDocument):
     comments = EmbeddedDocumentListField(document_type=Comments)
     shares = DictField()
     from_user = EmbeddedDocumentField(db_field='from', document_type=User)
-    to_user = DictField()
+    to_user = DictField(db_field='to') # ToDo: Keeps returning 'to' iso 'to_user'
     # ToDo: Doesn't work !!!
-    # to_user=EmbeddedDocumentListField(db_field='to', document_type=User)
+    # to_user=EmbeddedDocumentListField(db_field='to.data', document_type=User)
     message = StringField()
     picture = StringField()
     name = StringField()
@@ -80,12 +80,12 @@ class FbPosts(DynamicDocument):
     story = StringField()
 
     @classmethod
-    def get_posts(cls, oid=None, pageid=None, since=None, until=None, **query):
+    def get_posts(cls, id_=None, pageid=None, since=None, until=None, **query):
         """
             Method to get posts from the database and returns a queryset. All arguments are optional. No arguments returns all the posts from the database.
 
-            :param oid: ObjectId()
-            :param pageid: str: the profile.oid of the page
+            :param id_: ObjectId()
+            :param pageid: str: the profile.id_ of the page
             :param since: int: timestamp. If no 'until', returns all posts since 'since'
             :param until: int: timestamp: If no 'since', returns all posts until 'until'
             :param query: dict: flexible mongodb query
@@ -95,10 +95,10 @@ class FbPosts(DynamicDocument):
         """
 
         q = cls.objects(**query)
-        if oid: q = q(oid=oid)
-        if pageid: q = q(profile__id=pageid)
-        if since: q = q(created_time__gte=since)
-        if until: q = q(created_time__lte=until)
+        if id_: q=q(id_=id_)
+        if pageid: q=q(profile__id=pageid)
+        if since: q=q(created_time__gte=since)
+        if until: q=q(created_time__lte=until)
         return q
 
     def __unicode__(self):

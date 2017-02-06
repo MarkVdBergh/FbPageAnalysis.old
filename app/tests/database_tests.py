@@ -2,7 +2,6 @@ from __future__ import absolute_import
 
 import unittest
 from datetime import datetime, timedelta
-from pprint import pprint
 
 import pytz
 from bson import ObjectId
@@ -90,19 +89,19 @@ class CreateTestDb(object):
 
     def create_testdb(self):
         for pid in self.page_ids:
+            print pid
             with switch_db(FbPosts, 'politics') as FbPostsProduction:
-                query = FbPostsProduction.get_posts(pageid=pid, since=1485008617)
+                query = FbPostsProduction.get_posts(pageid=pid)
                 query = query.limit(self.limit)
                 # query = query.order_by('created_time') # makes it very slow
-                print pprint(query.explain())
+                # print pprint(query.explain())
                 for q in query:
-
                     with switch_db(FbPosts, 'test') as FbPostsTest:
                         fbp_test=FbPostsTest()
                         for at in q:
                             fbp_test[at]= q[at]
                         fbp_test.save()
-                    print q.id, q.profile.name
+                    # print q.id, q.profile.name
 
 
 if __name__ == '__main__':
