@@ -36,6 +36,10 @@ class Reactions(EmbeddedDocument):
     pic = URLField()
 
 
+    def __unicode__(self):
+        return self.to_json()
+
+
 # ToDo: Why Dynamic?
 class Comments(DynamicEmbeddedDocument):
     id = StringField()
@@ -61,12 +65,12 @@ class FbPosts(DynamicDocument):
     print meta
 
     # oid = ObjectIdField(db_field='_id', primary_key=True)
-    created_time = IntField(min_value=0, max_value=5000000000, default=-1)
-    postid = StringField(db_field='id', required=True)
-    profile = EmbeddedDocumentField(document_type=Profile)
+    created_time = IntField(min_value=0, max_value=5000000000, default=-1)              #
+    postid = StringField(db_field='id', required=True)                                  #
+    profile = EmbeddedDocumentField(document_type=Profile)                              #
     reactions = EmbeddedDocumentListField(document_type=Reactions)
     comments = EmbeddedDocumentListField(document_type=Comments)
-    shares = DictField()
+    shares = DictField(default={'count':0})                                                                #
     from_user = EmbeddedDocumentField(db_field='from', document_type=User)
     to_user = DictField(db_field='to') # ToDo: Keeps returning 'to' iso 'to_user'
     # ToDo: Doesn't work !!!

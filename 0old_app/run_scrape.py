@@ -75,6 +75,16 @@ pageids_news = [
     '134679853231866',  # Het Pallieterke
     '443387969094801',  # Newsmonkey
 ]
+# TEMP: DELETE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+pageids_news = [
+    # Kranten
+    '37823307325',  # Het Nieuwsblad
+    '10461114902',  # De Tijd
+    '134679853231866',  # Het Pallieterke
+    '443387969094801',  # Newsmonkey
+]
+
+
 pageids_test = ['983442595060481']
 resume = False
 ENG = engine.Engine(since=(2016, 12, 1))

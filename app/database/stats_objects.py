@@ -1,11 +1,10 @@
 from datetime import datetime
+from pprint import pprint
 
-from mongoengine import StringField, BooleanField, URLField, register_connection, Document, ListField, ReferenceField, DateTimeField, IntField
+from mongoengine import StringField, BooleanField, URLField, register_connection, Document, ListField, ReferenceField, DateTimeField, IntField, connect, \
+    ObjectIdField, DictField
 
 from app.settings import TESTING_DB, PRODUCTION_DB
-
-register_connection(alias='test', name=TESTING_DB)
-register_connection(alias='default', name=PRODUCTION_DB)
 
 """
         Get a set of posts via FbPosts. Iterate each post and save processed data to the appropriate collections.
@@ -18,98 +17,116 @@ register_connection(alias='default', name=PRODUCTION_DB)
             - histogram reactons, shares, comments
 """
 
-#ToDo: check: https://www.mongodb.com/blog/post/6-rules-of-thumb-for-mongodb-schema-design-part-3
 
-class Pages(Document):
-    # meta = {'collection': 'facebook', 'indexes': ['pageid', '$name', 'users']}
+class BaseDocument(Document):
+    meta = {'allow_inheritance': False,
+            'abstract': True,
+            # Global index options
+            'index_options': {},
+            'index_background': True,
+            'index_drop_dups': True,
+            'index_cls': False
+            }
 
-    # id_ = ObjectIdField(db_field='_id')
-    page_id = StringField(unique=True)
-    name = StringField()
-    posts = ListField(ReferenceField('Users'))  # List of 'Users' that created, reacted, shared or commented on a post
-
-    def upstert_page(self):
-        page = Pages.objects(page_id=self.page_id).upsert_one(name=self.name)
-        return page
-
-    def __unicode__(self):
-        return self.to_json()
-
-
-class Users(Document):
     # id_ = ObjectIdField(db_field='_id', default=ObjectId, primary_key=True)
-    user_id = StringField()
-    name = StringField()
-    picture = URLField()
-    is_silhouette = BooleanField()
-    link = URLField()
-    pages_active = ListField(ReferenceField('Pages'))  # List of 'Pages' the user creacted, shared or commented on
+    updated = DateTimeField(default=datetime.utcnow())  # Default is set when the module starts
+    # and is the same for all pages saved/updated in that batch
 
-    def upsert_user(self):
-        # user=Users.objects(user_id=self.user_id).upsert_one(name=self.name)
-        u = self.to_mongo().to_dict()
-        user = Users.objects(user_id=self.user_id).upsert_one(**u)
-        return user
+    unique_field = ''  # Used in the 'upsert_doc()' method
 
-    # return self.id_
-
-    def __unicode__(self):
-        return self.to_json()
-
-
-class PostStat(Document):
-    # id_ = ObjectIdField(db_field='_id', default=ObjectId, primary_key=True)
-
-    shares = IntField()
-    reactions = ListField(ReferenceField('Texts'))
-
-    type = StringField()
-    status_type = StringField()
-
-    def build_(self, fb_post):
-        return self.id_
-
-    def __unicode__(self):
-        return self.to_json()
-
-
-class Texts(Document):
-    # id_ = ObjectIdField(db_field='_id', default=ObjectId, primary_key=True)
-
-    language = StringField(default='nl')
-
-    def build_(self, fb_post):
-        return self.id_
-
-    def __unicode__(self):
-        return self.to_json()
-
-
-class Posts(Document):
-    # id_ = ObjectIdField(db_field='_id', default=ObjectId, primary_key=True)
-    updated = DateTimeField(datetime.utcnow())
-
-    created = DateTimeField()
-    post_id = StringField(required=True)
-
-    # Reference fields
-    page_id = ReferenceField(Pages, validation=False, dbref=True)
-
-    from_user = ReferenceField(Users, dbref=True)
-    to_users = ListField(ReferenceField(Users), default=None, dbref=True)  # Facebook users mentioned in message
-
-    message = ReferenceField(Texts, dbref=True)
-    story = ReferenceField(Texts, dbref=True)
-    post_link = URLField()
-    name = ReferenceField(Texts, dbref=True)
-    picture = URLField()
-    comments = ListField(ReferenceField(Texts), default=None, dbref=True)
-
-    def upsert_post(self):
-        p = self.to_mongo().to_dict()
-        print 'xxx', p
-        post = Posts.objects(post_id=self.post_id).upsert_one(**p)
+    def upsert_doc(self, ups_doc=None):
+        """
+        Upserts a document. If no 'ups_doc' provided, then upserts the object via class variables.
+        :param ups_doc: dict: Dictionary keys are upsert fields. More flexible then using object arguments. Ex: {'inc__field':1, ...}
+        :return: obj : The upserted class object
+        """
+        # Fix: Set all defaults in fields to None otherwise update of missing fields will set them to default
+        if not ups_doc: ups_doc = self.to_mongo().to_dict()
+        ups_doc['updated'] = datetime.utcnow()  # Update time for each upsert
+        _uni = {self.unique_field: ups_doc[self.unique_field]}
+        post = self.__class__.objects(**_uni).upsert_one(**ups_doc)
         return post
 
     def __unicode__(self):
         return self.to_json()
+
+
+class Pages(BaseDocument):
+    page_id = StringField(required=True, unique=True)
+
+    name = StringField(default=None)
+    posts = ListField(ReferenceField('Users'), default=None)  # List of 'Users' that created, reacted, shared or commented on a post
+    test = StringField(default=None)
+
+    unique_field = 'page_id'  # Used in the 'upsert_doc()' method
+
+
+class Users(BaseDocument):
+    user_id = StringField(required=True, unique=True)
+
+    name = StringField()
+    picture = URLField()
+    is_silhouette = BooleanField()
+    link = URLField()
+
+    pages_active = ListField(default=None)  # List of 'Pages' the user creacted, shared or commented on
+    tot_reactions=IntField()
+    tot_comments=IntField()
+    activity=DictField(default=None)
+
+    unique_field = 'user_id'  # Used in the 'upsert_doc()' method
+
+
+class PostStats(BaseDocument):
+    stat_id = StringField(required=True, unique=True)
+    created = DateTimeField()
+    shares = IntField()
+
+    reactions=DictField()
+    tot_reactions=IntField()
+
+    type = StringField()
+    status_type = StringField()
+
+    unique_field = 'stat_id'  # Used in the 'upsert_doc()' method
+
+
+class Snippets(BaseDocument):
+    snippet_id = StringField(required=True,unique=True)
+    created = DateTimeField()
+
+    language = StringField(default='nl')
+
+    unique_field = 'snipped_id'  # Used in the 'upsert_doc()' method
+
+
+class Posts(BaseDocument):
+    post_id = StringField(required=True)
+
+    created = DateTimeField()
+    page_id = ObjectIdField()
+    from_ref = ObjectIdField()
+    to_ref = ListField(ObjectIdField(), default=None)  # Facebook users mentioned in message
+    message_ref = ObjectIdField()
+    story_ref = ObjectIdField()
+    post_link = URLField()
+    post_name_ref = ObjectIdField()
+    picture_link = URLField()
+    comments_ref = ListField(ObjectIdField, default=None)
+
+    unique_field = 'post_id'  # Used in the 'upsert_doc()' method
+
+
+if __name__ == '__main__':
+    register_connection(alias='test', name=TESTING_DB)
+    register_connection(alias='default', name=PRODUCTION_DB)
+    connect(db='test')  # Assure we don't delete the politics/facebook collection !!!
+
+    q = Posts.objects.first()
+
+    p = Posts()
+    p.post_id = 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'
+
+    pprint(p)
+    pu = p.upsert_doc()
+    pprint(pu)
