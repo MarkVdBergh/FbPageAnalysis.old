@@ -16,12 +16,13 @@ Scraper
 -
 
 Datatbase
-- rewite to have only functions, without class.
 - Schema design:
     http://stackoverflow.com/questions/4662530/how-should-i-implement-this-schema-in-mongodb/4684647#4684647
     https://blog.serverdensity.com/mongodb-schema-design-pitfalls/
     https://www.mongodb.com/blog/post/schema-design-for-time-series-data-in-mongodb
-- reactions: make lowercase
+- Performance:
+    - https://www.safaribooksonline.com/library/view/50-tips-and/9781449306779/ch01.html
+
 
 
 Statistics
@@ -44,6 +45,8 @@ NLP
 - https://ayearofai.com/lenny-2-autoencoders-and-word-embeddings-oh-my-576403b0113a#.99q0q6tox
 - Word2Vec: http://textminingonline.com/training-word2vec-model-on-english-wikipedia-by-gensim
 - Dutch: Frog + https://github.com/proycon/python-frog
+- http://ben.bolte.cc/blog/2016/keras-language-modeling.html
+
 
 
 

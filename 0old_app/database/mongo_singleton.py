@@ -13,7 +13,7 @@ class Mongo():
 
     @classmethod
     def get_database(cls):
-        if cls.__connection == None:
+        if cls.__connection is None:
             cls.__connection = MongoClient(MONGO_HOST, MONGO_PORT)
             print 'New MongoClient created'
         db = cls.__connection[MONGO_DATABASE]

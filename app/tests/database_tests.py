@@ -11,6 +11,8 @@ from mongoengine.context_managers import switch_db
 from app.database.facebook_objects import Profile, FbPosts
 from app.settings import PRODUCTION_DB, TESTING_DB
 
+
+# Fix: this should not be in the module! Other modules that import this one, will also run the connections
 register_connection(alias='test', name=TESTING_DB)
 register_connection(alias='default', name=PRODUCTION_DB)
 connect(db='test')  # Assure we don't delete the politics/facebook collection !!!
@@ -78,6 +80,7 @@ class CreateTestDb(object):
     def __init__(self, page_ids=list(), limit=0):
         if page_ids:
             self.page_ids = page_ids
+            print page_ids
         else:
             self.page_ids = ['56605856504', '231742536958']
         if limit:
@@ -95,6 +98,7 @@ class CreateTestDb(object):
                 query = query.limit(self.limit)
                 # query = query.order_by('created_time') # makes it very slow
                 # print pprint(query.explain())
+                print query
                 for q in query:
                     with switch_db(FbPosts, 'test') as FbPostsTest:
                         fbp_test=FbPostsTest()

@@ -11,10 +11,6 @@ register_connection(alias='default', name=PRODUCTION_DB)
 print TESTING, TESTING_DB, PRODUCTION_DB
 
 
-# ToDo: connect() seems unnecessary. It uses the default db automatically?
-# connect(db='test')
-# connect('xxx')
-
 
 class Profile(EmbeddedDocument):
     id = StringField(required=True)
@@ -29,12 +25,13 @@ class User(EmbeddedDocument):
                               'is_silhouette': BooleanField()})
 
 
-class Reactions(EmbeddedDocument):
+class Reactions(
+    DynamicEmbeddedDocument):  # Fix: error when not Dynamic ( mongoengine.errors.FieldDoesNotExist: The fields "set(['blacklisted'])" do not exist on the document "Reactions")
+    # Fix: 'blacklisted' in reactions ??? see 223630074319030_103129139727064
     id = StringField()
     type = StringField()
     name = StringField()
     pic = URLField()
-
 
     def __unicode__(self):
         return self.to_json()
@@ -65,26 +62,26 @@ class FbPosts(DynamicDocument):
     print meta
 
     # oid = ObjectIdField(db_field='_id', primary_key=True)
-    created_time = IntField(min_value=0, max_value=5000000000, default=-1)              #
-    postid = StringField(db_field='id', required=True)                                  #
-    profile = EmbeddedDocumentField(document_type=Profile)                              #
+    created_time = IntField(min_value=0, max_value=5000000000, default=-1)  #
+    postid = StringField(db_field='id', required=True)  #
+    profile = EmbeddedDocumentField(document_type=Profile)#
     reactions = EmbeddedDocumentListField(document_type=Reactions)
     comments = EmbeddedDocumentListField(document_type=Comments)
-    shares = DictField(default={'count':0})                                                                #
-    from_user = EmbeddedDocumentField(db_field='from', document_type=User)
-    to_user = DictField(db_field='to') # ToDo: Keeps returning 'to' iso 'to_user'
+    shares = DictField(default={'count': 0})  #
+    from_user = EmbeddedDocumentField(db_field='from', document_type=User) #
+    to_user = DictField(db_field='to') # # ToDo: Keeps returning 'to' iso 'to_user' ???
     # ToDo: Doesn't work !!!
     # to_user=EmbeddedDocumentListField(db_field='to.data', document_type=User)
     message = StringField()
-    picture = StringField()
+    picture = StringField() #
     name = StringField()
-    link = StringField()
-    type = StringField()
-    status_type = StringField()
+    link = StringField() #
+    type = StringField() #
+    status_type = StringField() #
     story = StringField()
 
     @classmethod
-    def get_posts(cls, id_=None, pageid=None, since=None, until=None, **query):
+    def get_posts(cls, id_=None, pageid=None, since=None, until=None, batch_size=0, **query):
         """
             Method to get posts from the database and returns a queryset. All arguments are optional. No arguments returns all the posts from the database.
 
@@ -99,10 +96,11 @@ class FbPosts(DynamicDocument):
         """
 
         q = cls.objects(**query)
-        if id_: q=q(id_=id_)
-        if pageid: q=q(profile__id=pageid)
-        if since: q=q(created_time__gte=since)
-        if until: q=q(created_time__lte=until)
+        if id_: q = q(id_=id_)
+        if pageid: q = q(profile__id=pageid)
+        if since: q = q(created_time__gte=since)
+        if until: q = q(created_time__lte=until)
+        if batch_size: q = q.batch_size(batch_size)  # nr of documentent per db call
         return q
 
     def __unicode__(self):
