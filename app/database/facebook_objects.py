@@ -50,7 +50,7 @@ class Comments(DynamicEmbeddedDocument):
 
 class FbPosts(DynamicDocument):
     """
-        This is probably a temporary class to read the posts saved by the old scraper in the 'politics/facebook' collection
+        This is a probably temporary class to read the posts saved by the old scraper in the 'politics/facebook' collection
     """
     # ToDo: Rename class variables
     # ToDo: Add indexes ?
@@ -81,6 +81,7 @@ class FbPosts(DynamicDocument):
     story = StringField()
 
     @classmethod
+    @timecall()
     def get_posts(cls, id_=None, pageid=None, since=None, until=None, batch_size=0, **query):
         """
             Method to get posts from the database and returns a queryset. All arguments are optional. No arguments returns all the posts from the database.

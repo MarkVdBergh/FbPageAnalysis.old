@@ -1,8 +1,7 @@
 from datetime import datetime
-from pprint import pprint
 
 from mongoengine import StringField, BooleanField, URLField, register_connection, ListField, DateTimeField, IntField, connect, \
-    ObjectIdField, EmbeddedDocument, MapField, EmbeddedDocumentListField, DynamicDocument
+    ObjectIdField, EmbeddedDocument, MapField, EmbeddedDocumentListField, DynamicDocument, DictField
 
 from app.settings import TESTING_DB, PRODUCTION_DB
 
@@ -25,7 +24,7 @@ from app.settings import TESTING_DB, PRODUCTION_DB
 
 
 # Fix: Set all defaults in fields to None otherwise update of missing fields will set them to default
-class BaseDocument(DynamicDocument): # Todo: If 'Document iso DynamicDocument, big problems with the oid, _id, id auto_id keys
+class BaseDocument(DynamicDocument):  # Todo: If 'Document iso DynamicDocument, big problems with the oid, _id, id auto_id keys
     meta = {'allow_inheritance': False,
             'abstract': True,
             # Global index options
@@ -46,14 +45,14 @@ class BaseDocument(DynamicDocument): # Todo: If 'Document iso DynamicDocument, b
         :param ups_doc: dict: Dictionary keys are upsert fields. More flexible then using object arguments. Ex: {'inc__field':1, ...}
         :return: obj : The upserted class object
         """
-
-        pprint(ups_doc)
-        if not ups_doc: ups_doc = self.to_mongo().to_dict()
+        # pprint(ups_doc)
+        if not ups_doc: ups_doc = self.to_mongo().to_dict()  # Todo: Isn't it better to only accept ups_doc?
         ups_doc['updated'] = datetime.utcnow()  # Update time for each upsert
         _uni = {self.unique_field: ups_doc[self.unique_field]}
-        print '-'*111
+        # print '-'*111
         # pprint(self)
-        pprint(ups_doc)
+        # pprint(ups_doc)
+        # print '-'*111
         doc = self.__class__.objects(**_uni).upsert_one(**ups_doc)
         return doc
 
@@ -76,7 +75,7 @@ class UserActivity(EmbeddedDocument):
     date = DateTimeField()
     type = StringField()  # Reaction, Post, Comment, ...
     sub_type = StringField()  # Like, Angry, Comment_on_comment, ...
-    page_ref = ObjectIdField
+    page_ref = ObjectIdField()
     poststat_ref = ObjectIdField()
     snippet_ref = ObjectIdField()
     own_page = BooleanField()
@@ -109,7 +108,7 @@ class Users(BaseDocument):
 
 
 class Snippets(BaseDocument):
-    snippet_id = StringField(required=True, unique=True)
+    snippet_id = StringField(required=True, unique=False)
     created = DateTimeField()
     snip_type = StringField()
     user_ref = ObjectIdField()
@@ -130,9 +129,8 @@ class Snippets(BaseDocument):
 class PostStats(BaseDocument):
     post_id = StringField(required=True, unique=True)  #
     created = DateTimeField()  #
-    # last_active = DateTimeField()
     page_ref = ObjectIdField()  #
-    type = StringField()  #
+    post_type = StringField()  #
     status_type = StringField()  #
     u_from_ref = ObjectIdField()  #
     u_to_ref = ListField(default=None)  #
@@ -143,16 +141,17 @@ class PostStats(BaseDocument):
     s_post_name_ref = ObjectIdField()  #
     picture_link = URLField()  #
 
-    nb_shares = IntField()
-    u_reacted = MapField(ListField(), default=None)  # {like:[ObjectId], ...}
-    nb_reactions = IntField()
-    s_comments = ListField()
-    u_commented = ListField  # [ObjectId(), ...]
-    u_comment_liked = ListField()
+    nb_shares = IntField()  #
+    nb_reactions = IntField() #
+    reactions=DictField()
+    u_reacted = MapField(ListField(), default=None)  # # {like:[ObjectId, ...], ...}
+    s_comments = ListField(default=None)
+    u_commented = ListField(default=None)  # [ObjectId(), ...]
+    u_comment_liked = ListField(default=None)
     nb_comment_likes = IntField()
     nb_comments = IntField()
 
-    unique_field = 'stat_id'  # Used in the 'upsert_doc()' method
+    unique_field = 'post_id'  # Used in the 'upsert_doc()' method
 
 
 #
