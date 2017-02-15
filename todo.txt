@@ -1,8 +1,6 @@
 General
 - implement unittests: fi: test with a blacklisted id and see if the program doen't break. Testing changes to the code
   can show fast if there is a bug. (see also @coverage on http://mg.pov.lt/profilehooks/)
-- when to use underscore?
-
 
 Scraper
 - implement a lock on the pageid. Different processes can run without scraping the same page.
@@ -13,7 +11,7 @@ Scraper
 - improve restart method.
   teller is obsolete.
   when internet connection crash, best is to have an exponentialy increasing waiting time. With a blacklist crash, the best is 0 waiting time, and no teller.
--
+
 
 Datatbase
 - Schema design:
@@ -63,6 +61,8 @@ Future
     https://github.com/bear/python-twitter
     http://knightlab.northwestern.edu/2014/03/15/a-beginners-guide-to-collecting-twitter-data-and-a-bit-of-web-scraping/
 - 24/7 monitoring only reactions and comments to see evolution of posts in time
+- Checkout MLDB database
+- Checkout Docker
 
 
 Monetarisation

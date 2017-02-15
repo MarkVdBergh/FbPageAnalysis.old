@@ -2,19 +2,19 @@ import sys
 import time
 
 import engine
-from app.settings import FB_PAGES_LIST
+from settings import PAGE_LIST
 from tools.general_tools import utc_now
 
-pageids_pol = FB_PAGES_LIST
+pageids = PAGE_LIST
 
-
-pageids_test = ['983442595060481']
+print "CORRECT THE LISTS !!!!"
+pageids_test = ['596946040405796']
 resume = False
-ENG = engine.Engine(since=(2009, 12, 1))
+ENG = engine.Engine(since=(2017, 1, 1))
 
 list_nr = int(raw_input('Enter (1:politics, 2:news, id): '))
 if list_nr == 0:
-    page_ids = pageids_pol + pageids_news
+    page_ids = pageids
     bulkdays = 2
     lst = 'ALL'
 elif list_nr == 1:

@@ -1,20 +1,9 @@
 from datetime import datetime
 
-from mongoengine import StringField, BooleanField, URLField, register_connection, ListField, DateTimeField, IntField, connect, \
+from mongoengine import StringField, BooleanField, register_connection, ListField, DateTimeField, IntField, connect, \
     ObjectIdField, EmbeddedDocument, MapField, EmbeddedDocumentListField, DynamicDocument, DictField
 
 from app.settings import TESTING_DB, PRODUCTION_DB
-
-"""
-        Get a set of posts via FbPosts. Iterate each post and save processed data to the appropriate collections.
-
-        Example queries:
-            - most active users for a page
-            - top 10 post with most reactions, shares, comments
-            - all text, messages, comments for a user, page during a period
-            - average reactions, shares, comments during a period
-            - histogram reactons, shares, comments
-"""
 
 
 # ToDo: Indexes: If you create an index which contains all the fields you would query and all the fields
@@ -31,8 +20,7 @@ class BaseDocument(DynamicDocument):  # Todo: If 'Document iso DynamicDocument, 
             'index_options': {},
             'index_background': True,
             'index_drop_dups': True,
-            'index_cls': False
-            }
+            'index_cls': False}
 
     oid = ObjectIdField(db_field='_id', default=None, required=True, primary_key=True)
     updated = DateTimeField(default=datetime.utcnow())
@@ -49,10 +37,6 @@ class BaseDocument(DynamicDocument):  # Todo: If 'Document iso DynamicDocument, 
         if not ups_doc: ups_doc = self.to_mongo().to_dict()  # Todo: Isn't it better to only accept ups_doc?
         ups_doc['updated'] = datetime.utcnow()  # Update time for each upsert
         _uni = {self.unique_field: ups_doc[self.unique_field]}
-        # print '-'*111
-        # pprint(self)
-        # pprint(ups_doc)
-        # print '-'*111
         doc = self.__class__.objects(**_uni).upsert_one(**ups_doc)
         return doc
 
@@ -73,11 +57,12 @@ class Pages(BaseDocument):
 
 class UserActivity(EmbeddedDocument):
     date = DateTimeField()
-    type = StringField()  # Reaction, Post, Comment, ...
-    sub_type = StringField()  # Like, Angry, Comment_on_comment, ...
+    action_type = StringField()  # Reaction, Post, Comment, ...
+    action_subtype = StringField()  # Like, Angry, Comment_on_comment, ...
     page_ref = ObjectIdField()
     poststat_ref = ObjectIdField()
-    snippet_ref = ObjectIdField()
+    comment_ref = ObjectIdField()
+    content_ref = ObjectIdField()
     own_page = BooleanField()
 
     def __unicode__(self):
@@ -86,9 +71,8 @@ class UserActivity(EmbeddedDocument):
 
 class Users(BaseDocument):
     user_id = StringField(required=True, unique=True)
-
     name = StringField()
-    picture = URLField()
+    picture = StringField()
     is_silhouette = BooleanField()
     pages_active = ListField(default=None)  # List of 'Pages' the user creacted, shared or commented on
 
@@ -97,33 +81,57 @@ class Users(BaseDocument):
     posted = EmbeddedDocumentListField(UserActivity, default=None)
     reacted = EmbeddedDocumentListField(UserActivity, default=None)
     commented = EmbeddedDocumentListField(UserActivity, default=None)
-
+    comment_liked = EmbeddedDocumentListField(UserActivity, default=None)
     tot_fromed = IntField()
     tot_toed = IntField()
     tot_posts = IntField()
     tot_reactions = IntField()
     tot_comments = IntField()
+    tot_comments_liked = IntField()
 
     unique_field = 'user_id'  # Used in the 'upsert_doc()' method
 
 
-class Snippets(BaseDocument):
-    snippet_id = StringField(required=True, unique=False)
+class Contents(BaseDocument):
+    content_id = StringField(required=True, unique=True)
     created = DateTimeField()
-    snip_type = StringField()
     user_ref = ObjectIdField()
     page_ref = ObjectIdField()
     poststat_ref = ObjectIdField()
-    parent_ref = ObjectIdField()
-    childs = ListField(default=None)
-    text = StringField()
+    message = StringField()
+    name = StringField()
+    story = StringField()
+    link = StringField()
+    picture_link = StringField()
+
     nb_reactions = IntField()
     nb_comments = IntField()
     nb_shares = IntField()
 
     language = StringField(default='nl')
 
-    unique_field = 'snippet_id'  # Used in the 'upsert_doc()' method
+    unique_field = 'content_id'  # Used in the 'upsert_doc()' method
+
+
+class Comments(BaseDocument):
+    comment_id = StringField(required=True, unique=True)
+    created = DateTimeField()
+    user_ref = ObjectIdField()
+    page_ref = ObjectIdField()
+    poststat_ref = ObjectIdField()
+
+    parent_ref = ObjectIdField()
+    childs_ref = ListField(default=None)
+
+    text = StringField()
+
+    u_reacted = ListField()
+    nb_reactions = IntField()
+    nb_comments = IntField()
+
+    language = StringField(default='nl')
+
+    unique_field = 'comment_id'  # Used in the 'upsert_doc()' method
 
 
 class PostStats(BaseDocument):
@@ -134,42 +142,19 @@ class PostStats(BaseDocument):
     status_type = StringField()  #
     u_from_ref = ObjectIdField()  #
     u_to_ref = ListField(default=None)  #
-
-    s_message_ref = ObjectIdField()  #
-    s_story_ref = ObjectIdField()  #
-    link = URLField()  #
-    s_post_name_ref = ObjectIdField()  #
-    picture_link = URLField()  #
+    content_ref = ObjectIdField()
 
     nb_shares = IntField()  #
-    nb_reactions = IntField() #
-    reactions=DictField()
+    nb_reactions = IntField()  #
+    reactions = DictField()  #
     u_reacted = MapField(ListField(), default=None)  # # {like:[ObjectId, ...], ...}
-    s_comments = ListField(default=None)
+    comments = ListField(default=None)
     u_commented = ListField(default=None)  # [ObjectId(), ...]
-    u_comment_liked = ListField(default=None)
-    nb_comment_likes = IntField()
+    u_comments_liked = ListField(default=None)
+    nb_comments_likes = IntField()
     nb_comments = IntField()
 
     unique_field = 'post_id'  # Used in the 'upsert_doc()' method
-
-
-#
-# class Posts(BaseDocument):
-#     post_id = StringField(required=True)
-#
-#     # created = DateTimeField()
-#     # page_id = ObjectIdField()
-#     # from_ref = ObjectIdField()
-#     # to_ref = ListField(ObjectIdField(), default=None)  # Facebook users mentioned in message
-#     # message_ref = ObjectIdField()
-#     # story_ref = ObjectIdField()
-#     # post_link = URLField()
-#     # post_name_ref = ObjectIdField()
-#     # picture_link = URLField()
-#     comments_ref = ListField(ObjectIdField, default=None)
-#
-#     unique_field = 'post_id'  # Used in the 'upsert_doc()' method
 
 
 if __name__ == '__main__':

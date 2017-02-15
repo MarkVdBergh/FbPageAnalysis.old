@@ -20,6 +20,7 @@ FB_PAGES_LIST=pageids_pol = [
     '62130106444',  # Philippe De Backer
     '1516688831944301',  # Bart Tommelein
     '100947845480',  # Sven Gatz
+    '596946040405796', # Bart Somers
 
     # NVA
     '334361224413',  # NVA
