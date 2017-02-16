@@ -20,11 +20,13 @@ FB_PAGES_LIST = pageids_pol = [
     # '345644812211706',  # Het Laatste Nieuws
 
     # '7133374462',  # De Standaard
-    '37823307325',  # Het Nieuwsblad
+    # '37823307325',  # Het Nieuwsblad
     # '10461114902',  # De Tijd
     # '134679853231866',  # Het Pallieterke
     # '443387969094801',  # Newsmonkey
     # '189185831126295',  # Nieuwsuur
+    # Nederland
+    '202064936858448',  # Geert Wilders
 ]
 
 # FB_PAGES_LIST = pageids_pol = [
@@ -87,8 +89,6 @@ FB_PAGES_LIST = pageids_pol = [
 #     '236485149843971',  # Peter Mertens
 #     '305365056290036',  # Raoul Hedebouw
 #
-#     # Nederland
-#     '202064936858448',  # Geert Wilders
 #
 #     # Kranten
 #     '231742536958',  # De Morgen

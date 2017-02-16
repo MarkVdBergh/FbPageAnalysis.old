@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
 from datetime import datetime
+from time import mktime
 
 import pandas as pd
+import pytz
 from bson import ObjectId
 from mongoengine import register_connection, connect
 from mongoengine.context_managers import switch_db
@@ -22,8 +24,10 @@ class DatabaseTools(object):
         rslt = self.facebook_db.update({'id': postid}, {'$set': {'flag': flag}}, upsert=False)
         return rslt
 
-    def facebook_reset_flag(self):
-        rslt = self.facebook_db.update_many({'flag': {'$ne': 0}}, {'$set': {'flag': 0}}, upsert=False)
+    def facebook_reset_flag(self, page_id=None):
+        query = {'flag': {'$ne': 0}}
+        if page_id: query.update({'profile.id': page_id})
+        rslt = self.facebook_db.update_many(query, {'$set': {'flag': 0}}, upsert=False)
         return rslt
 
     def facebook_create_flag_field(self):
@@ -31,7 +35,7 @@ class DatabaseTools(object):
         return rslt
 
 
-class DbFactory(object):
+class DatabaseFactory(object):
     users_hashtbl = {}
     pages_hashtbl = {}
     # contents_hashtbl = {}
@@ -249,21 +253,107 @@ if __name__ == '__main__':
 connect('test3')
 tools = DatabaseTools()
 
-
+# DatabaseTools().facebook_reset_flag(page_id='202064936858448')
+# 1/0
 # Initiate hashtables
 q = Users.objects.all().only('user_id', 'oid')
-DbFactory.users_hashtbl = {user.user_id: user.oid for user in q}
+DatabaseFactory.users_hashtbl = {user.user_id: user.oid for user in q}
 q = Pages.objects.all().only('page_id', 'oid')
-DbFactory.pages_hashtbl = {page.page_id: page.oid for page in q}
-print len(DbFactory.pages_hashtbl), len(DbFactory.users_hashtbl)
+DatabaseFactory.pages_hashtbl = {page.page_id: page.oid for page in q}
+print len(DatabaseFactory.pages_hashtbl), len(DatabaseFactory.users_hashtbl)
 
 register_connection(alias='politics', name='politics')
 
 flag = 1
+d = datetime(2000, 1, 1, tzinfo=pytz.utc)
+since = mktime(d.timetuple())
 for pid in FB_PAGES_LIST:
     with switch_db(FbPosts, 'politics') as FbPostsProduction:
-        q = FbPostsProduction.get_posts(pageid=pid, flag_ne=flag,batch_size=1)
+        q = FbPostsProduction.get_posts(pageid=pid, flag_ne=flag, since=since, batch_size=1)
     print datetime.now(), 'start: ', pid
     for fb_post in q:
-        x = DbFactory(fbpost=fb_post)
+        print fb_post.postid
+        x = DatabaseFactory(fbpost=fb_post)
         tools.facebook_set_flag(postid=fb_post.postid, flag=flag)
+
+"""
+Traceback (most recent call last):
+  File "run_engine.py", line 1, in <module>
+    from app.database import engines
+  File "/home/marc/DATA/Projects/FbPageAnalysis/app/database/engines.py", line 271, in <module>
+    x = DatabaseFactory(fbpost=fb_post)
+  File "/home/marc/DATA/.virtualenv/ml/local/lib/python2.7/site-packages/profilehooks.py", line 735, in new_fn
+    return fp(*args, **kw)
+  File "/home/marc/DATA/.virtualenv/ml/local/lib/python2.7/site-packages/profilehooks.py", line 761, in __call__
+    return fn(*args, **kw)
+  File "/home/marc/DATA/Projects/FbPageAnalysis/app/database/engines.py", line 56, in __init__
+    self.__make_reaction()
+  File "/home/marc/DATA/Projects/FbPageAnalysis/app/database/engines.py", line 147, in __make_reaction
+    action_subtype=usr['type'])
+  File "/home/marc/DATA/Projects/FbPageAnalysis/app/database/engines.py", line 234, in __make_user
+    user = user.upsert_doc()
+  File "/home/marc/DATA/Projects/FbPageAnalysis/app/database/stats_objects.py", line 40, in upsert_doc
+    doc = self.__class__.objects(**_uni).upsert_one(**ups_doc)
+  File "/home/marc/DATA/.virtualenv/ml/local/lib/python2.7/site-packages/mongoengine/queryset/base.py", line 540, in upsert_one
+    full_result=True, **update)
+  File "/home/marc/DATA/.virtualenv/ml/local/lib/python2.7/site-packages/mongoengine/queryset/base.py", line 520, in update
+    raise OperationError(u'Update failed (%s)' % six.text_type(err))
+mongoengine.errors.OperationError: Update failed (After applying the update to the document {_id: ObjectId('58a52fe24520006ed1f48ea5') , ...}, the (immutable) field '_id' was found to have been altered to _id: ObjectId('58a5330f4520005c44563cc2'))
+
+"""
+
+
+# Hashtables
+"""2017-02-16 10:57:51.900886 start:  202064936858448
+
+  __init__ (/home/marc/DATA/Projects/FbPageAnalysis/app/database/engines.py:45):
+    106.009 seconds
+
+
+  __init__ (/home/marc/DATA/Projects/FbPageAnalysis/app/database/engines.py:45):
+    14.094 seconds
+
+
+  __init__ (/home/marc/DATA/Projects/FbPageAnalysis/app/database/engines.py:45):
+    26.978 seconds
+
+
+  __init__ (/home/marc/DATA/Projects/FbPageAnalysis/app/database/engines.py:45):
+    15.893 seconds
+
+
+  __init__ (/home/marc/DATA/Projects/FbPageAnalysis/app/database/engines.py:45):
+    31.814 seconds
+
+
+  __init__ (/home/marc/DATA/Projects/FbPageAnalysis/app/database/engines.py:45):
+    9.349 seconds
+
+
+  __init__ (/home/marc/DATA/Projects/FbPageAnalysis/app/database/engines.py:45):
+    15.281 seconds
+
+
+  __init__ (/home/marc/DATA/Projects/FbPageAnalysis/app/database/engines.py:45):
+    21.211 seconds
+
+
+  __init__ (/home/marc/DATA/Projects/FbPageAnalysis/app/database/engines.py:45):
+    9.305 seconds
+
+
+  __init__ (/home/marc/DATA/Projects/FbPageAnalysis/app/database/engines.py:45):
+    8.319 seconds
+
+
+  __init__ (/home/marc/DATA/Projects/FbPageAnalysis/app/database/engines.py:45):
+    10.043 seconds
+
+
+  __init__ (/home/marc/DATA/Projects/FbPageAnalysis/app/database/engines.py:45):
+    7.431 seconds
+
+
+  __init__ (/home/marc/DATA/Projects/FbPageAnalysis/app/database/engines.py:45):
+    30.276 seconds
+"""
