@@ -140,6 +140,7 @@ class DbFactory(object):
         child_oids = []
         parent = parent_oid = None
         for fbcomment in comments:
+            if hasattr(fbcomment, 'blacklisted)'): continue  # Fix: Blacklisted
             comment = self.__make_comment(fbcomment)
             if teller == -1:  # parent
                 # comment = comment.upsert_doc()  # save parent
@@ -219,15 +220,20 @@ class DbFactory(object):
         _useractivity.poststat_ref = self.poststat.oid
         _useractivity.comment_ref = comment_ref
         _useractivity.content_ref = self.content.oid
-        _useractivity.own_page = user_id == self.page.page_id # fix: seems to be always false
+        _useractivity.own_page = user_id == self.page.page_id  # fix: seems to be always false
         return user, _useractivity
 
+
+# fix: ERROR : 53668151866_10154153272786867
+# KeyError: 'comment_id',
+# File "/home/marc/DATA/Projects/FbPageAnalysis/app/database/engines.py", line 169,
+# in __make_comment    user_name=fbcom.comment_from.name,
 
 if __name__ == '__main__':
     pass
 
 connect('test3')
-# Initiate hashtables
+# # Initiate hashtables
 q = Users.objects.all().only('user_id', 'oid')
 DbFactory.users_hashtbl = {user.user_id: user.oid for user in q}
 q = Pages.objects.all().only('page_id', 'oid')
@@ -238,8 +244,18 @@ register_connection(alias='politics', name='politics')
 
 for pid in FB_PAGES_LIST:
     with switch_db(FbPosts, 'politics') as FbPostsProduction:
-        q = FbPostsProduction.get_posts(pageid=pid, batch_size=10)
+        q = FbPostsProduction.get_posts(pageid=pid, batch_size=1)
     print datetime.now(), 'start: ', pid
     for fb_post in q:
-        print fb_post.postid
+        # print fb_post.postid
+        # print fb_post.id
         x = DbFactory(fbpost=fb_post)
+
+        # fix: flag doesn't work
+        # print fb_post.flag
+        # fb_post.flag = 999
+        # fb_post.save()
+        #
+        # print fb_post.postid
+        # print fb_post.id
+        # print 1 / 0

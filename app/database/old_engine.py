@@ -1,9 +1,11 @@
 import datetime
 
-from settings import *
-from tools.database_tool_MIGRATE import MongoDb
-from tools.general_tools import yyyymmdd_to_datetime, utc_now, datetime_to_timestamp, timestamp_to_datetime
-from tools.scraping_tools import FacebookScraping
+from profilehooks import timecall
+
+from app.database.old_database_tool_MIGRATE import MongoDb
+from app.old_settings import *
+from tools.old_general_tools import yyyymmdd_to_datetime, utc_now, datetime_to_timestamp, timestamp_to_datetime
+from tools.old_scraping_tools import FacebookScraping
 
 
 class Engine():
@@ -33,7 +35,7 @@ class Engine():
             self.until = utc_now()
         else:
             self.until = yyyymmdd_to_datetime(until[0], until[1], until[2], 23, 59, 59)
-
+    @timecall()
     def run_scraping(self, pageidlist, resume=True, bulkdays=45):
         '''
 

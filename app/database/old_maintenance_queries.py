@@ -1,7 +1,6 @@
-from tools.general_tools import timestamp_to_datetime
-
-from facebook_crud import *
-from mongo_singleton import Mongo
+from old_facebook_crud import *
+from old_mongo_singleton import Mongo
+from tools.old_general_tools import timestamp_to_datetime
 
 db = Mongo.get_database()
 collection = db['facebook']
@@ -15,7 +14,7 @@ collection = db['facebook']
 
 ##########################################
 
-def fbConvert_created_date_dt_ToDate(since=None, until=None):
+def XXX_fbConvert_created_date_dt_ToDate(since=None, until=None):
     '''
     From timestamp in_field, convert it to datetime and store it in out_field
     :param in_field:
@@ -45,25 +44,12 @@ def fbConvert_created_date_dt_ToDate(since=None, until=None):
     return {'matched': matched, 'modified': modified}
 
 
-# c = fbConvert_created_date_dt_ToDate(since=yyyymmdd_to_timestamp(2017, 1, 10),
-#                                      until=yyyymmdd_to_timestamp(2016, 5, 11))
-# for i in c:
-#     print i
-# print c
-
-
 def fbResetFlag(flag=0):
     q = {'flag': {'$ne': flag}}
     u = {'$set': {'flag': flag}}
     result = fbUpdatePost(query=q, update=u)
+
     print result.raw_result
 
 
 fbResetFlag(0)
-
-
-
-# print fbConvert_created_date_dt_ToDate(since=yyyymmdd_to_timestamp(2017, 1, 10))
-# for i in fbGetPosts({}, projection={'id': 1, 'created_time_dt': 1},
-#                       since=yyyymmdd_to_timestamp(2017, 1, 10)):
-#     print i

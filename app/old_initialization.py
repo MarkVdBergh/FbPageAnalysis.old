@@ -1,6 +1,6 @@
 from pymongo import MongoClient, DESCENDING, ASCENDING
 
-from settings import MONGO_HOST, MONGO_PORT
+from old_settings import MONGO_HOST, MONGO_PORT
 
 
 def create_indexes():

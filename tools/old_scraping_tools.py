@@ -3,7 +3,8 @@ import time
 
 import facebook
 import requests
-from tools.general_tools import datetime_to_timestamp, utc_now, save_blacklist_doc, \
+
+from tools.old_general_tools import datetime_to_timestamp, utc_now, save_blacklist_doc, \
     get_blacklist, is_blacklisted, save_log, timestamp_to_datetime
 
 
@@ -175,11 +176,3 @@ class FacebookScraping():
             rate_limit = r.headers.get('x-app-usage')
         return
 
-
-class FacebookProcessing():
-    pass
-
-
-class FacebookStoring():
-    # ToDo: read https://docs.mongodb.com/manual/tutorial/model-embedded-one-to-many-relationships-between-documents/
-    pass

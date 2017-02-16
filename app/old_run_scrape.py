@@ -1,16 +1,21 @@
+import datetime
 import sys
 import time
 
-import engine
-from settings import PAGE_LIST
-from tools.general_tools import utc_now
+from app.database import old_engine
+from old_settings import PAGE_LIST
+from tools.old_general_tools import utc_now
 
 pageids = PAGE_LIST
 
+
+# Todo: when error it sleeps for 600sec, then start over from the beginning
 print "CORRECT THE LISTS !!!!"
 pageids_test = ['596946040405796']
 resume = False
-ENG = engine.Engine(since=(2017, 1, 1))
+
+since= datetime.datetime.today() - datetime.timedelta(days=14)
+ENG = old_engine.Engine(since=(since.year, since.month, since.day))
 
 list_nr = int(raw_input('Enter (1:politics, 2:news, id): '))
 if list_nr == 0:
@@ -35,7 +40,7 @@ else:
     lst = 'TEST'
 i = 0
 print '\n{} Start scraping list: {}. Attempt: {}\n'.format(utc_now(), lst, i)
-while i < 10:
+while i < 1:
     try:
         result = ENG.run_scraping(pageidlist=page_ids, resume=resume, bulkdays=bulkdays)
         if result:

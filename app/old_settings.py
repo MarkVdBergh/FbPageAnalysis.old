@@ -1,6 +1,8 @@
 # Facebook scraping settings
 
+
 PAGE_LIST = [
+
     # Open VLD
     '53668151866',  # VLD
     '149158155084',  # Gwendolyn Rutten
@@ -61,7 +63,7 @@ PAGE_LIST = [
 
     # Kranten
     '270994524621',  # De Redactie
-    '223630074319030'  # VTM News
+    '223630074319030',  # VTM News
     '345644812211706',  # Het Laatste Nieuws
     '231742536958',  # De Morgen
     '7133374462',  # De Standaard
@@ -70,8 +72,14 @@ PAGE_LIST = [
     '134679853231866',  # Het Pallieterke
     '443387969094801',  # Newsmonkey
 
-    # '446368145415026',  # Veronique
-]
+    '223630074319030',  # VTM News
+    '345644812211706',  # Het Laatste Nieuws
+    '231742536958',  # De Morgen
+    '7133374462',  # De Standaard
+    '37823307325',  # Het Nieuwsblad
+    '10461114902',  # De Tijd
+    '134679853231866',  # Het Pallieterke
+    '443387969094801']  # Newsmonkey
 
 FB_APP_ID = '765646503583435'
 FB_APP_SECRET = 'e4fbccb989f8f898f6c5336d7ea46d47'

@@ -1,6 +1,6 @@
 import pprint
 
-from mongoengine import EmbeddedDocument, StringField, DictField, BooleanField, URLField, DynamicEmbeddedDocument, IntField, EmbeddedDocumentField, \
+from mongoengine import EmbeddedDocument, StringField, DictField, BooleanField, DynamicEmbeddedDocument, IntField, EmbeddedDocumentField, \
     EmbeddedDocumentListField, DynamicDocument, register_connection
 from profilehooks import timecall
 
@@ -29,7 +29,7 @@ class Reactions(
     id = StringField()
     type = StringField()
     name = StringField()
-    pic = URLField()
+    pic = StringField()
 
     def __unicode__(self):
         return self.to_json()
@@ -80,6 +80,9 @@ class FbPosts(DynamicDocument):
     type = StringField()  #
     status_type = StringField()  #
     story = StringField()
+    flag=IntField()
+    # update_ts=IntField()
+    # id=ObjectIdField()
 
     @classmethod
     @timecall()

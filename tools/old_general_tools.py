@@ -4,7 +4,8 @@ import time
 import pytz
 from pymongo import MongoClient
 from pymongo import UpdateOne
-from settings import LOCAL_TIMEZONE, LOCAL_DATE_FORMAT, MONGO_HOST, MONGO_PORT
+
+from app.old_settings import LOCAL_TIMEZONE, LOCAL_DATE_FORMAT, MONGO_HOST, MONGO_PORT
 
 
 class MyTools():

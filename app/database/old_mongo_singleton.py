@@ -1,6 +1,6 @@
 from pymongo import MongoClient
 
-from settings import MONGO_HOST, MONGO_PORT, MONGO_DATABASE
+from ..old_settings import MONGO_HOST, MONGO_PORT, MONGO_DATABASE
 
 
 class Mongo():
