@@ -16,6 +16,7 @@ resume = False
 
 since= datetime.datetime.today() - datetime.timedelta(days=14)
 ENG = old_engine.Engine(since=(since.year, since.month, since.day))
+# ENG = old_engine.Engine(since=(2009, 1, 1))
 
 list_nr = int(raw_input('Enter (1:politics, 2:news, id): '))
 if list_nr == 0:

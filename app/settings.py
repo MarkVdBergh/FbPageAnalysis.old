@@ -14,17 +14,17 @@ TESTING_DB = 'test'
 # Facebook Pages
 FB_PAGES_LIST = pageids_pol = [
     # Kranten
-    '231742536958',  # De Morgen
-    '270994524621',  # VRT De Redactie
-    '223630074319030',  # VTM Nieuws
-    '345644812211706',  # Het Laatste Nieuws
+    # '231742536958',  # De Morgen
+    # '270994524621',  # VRT De Redactie
+    # '223630074319030',  # VTM Nieuws
+    # '345644812211706',  # Het Laatste Nieuws
 
-    '7133374462',  # De Standaard
+    # '7133374462',  # De Standaard
     '37823307325',  # Het Nieuwsblad
-    '10461114902',  # De Tijd
-    '134679853231866',  # Het Pallieterke
-    '443387969094801',  # Newsmonkey
-    '189185831126295',  # Nieuwsuur
+    # '10461114902',  # De Tijd
+    # '134679853231866',  # Het Pallieterke
+    # '443387969094801',  # Newsmonkey
+    # '189185831126295',  # Nieuwsuur
 ]
 
 # FB_PAGES_LIST = pageids_pol = [
@@ -38,6 +38,8 @@ FB_PAGES_LIST = pageids_pol = [
 #     '1516688831944301',  # Bart Tommelein
 #     '100947845480',  # Sven Gatz
 #     '596946040405796',  # Bart Somers
+
+# '289561071177436'  # Patrick Dewael
 #
 #     # NVA
 #     '334361224413',  # NVA
@@ -102,5 +104,4 @@ FB_PAGES_LIST = pageids_pol = [
 #     '189185831126295',  # Nieuwsuur
 # ]
 NEW = [
-    '289561071177436'  # Patrick Dewael
 ]

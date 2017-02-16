@@ -8,8 +8,27 @@ from mongoengine.context_managers import switch_db
 from profilehooks import timecall
 
 from app.database.facebook_objects import FbPosts
+from app.database.mongo_singleton import MongoFacebook
 from app.database.stats_objects import Pages, Users, PostStats, UserActivity, Contents, Comments
 from app.settings import FB_PAGES_LIST
+
+
+class DatabaseTools(object):
+    def __init__(self):
+        self.politics_db = MongoFacebook().get_database()
+        self.facebook_db = self.politics_db['facebook']
+
+    def facebook_set_flag(self, postid, flag=0):
+        rslt = self.facebook_db.update({'id': postid}, {'$set': {'flag': flag}}, upsert=False)
+        return rslt
+
+    def facebook_reset_flag(self):
+        rslt = self.facebook_db.update_many({'flag': {'$ne': 0}}, {'$set': {'flag': 0}}, upsert=False)
+        return rslt
+
+    def facebook_create_flag_field(self):
+        rslt = self.facebook_db.update_many({'flag': {"$exists": False}}, {'$set': {'flag': 0}}, upsert=False)
+        return rslt
 
 
 class DbFactory(object):
@@ -224,16 +243,14 @@ class DbFactory(object):
         return user, _useractivity
 
 
-# fix: ERROR : 53668151866_10154153272786867
-# KeyError: 'comment_id',
-# File "/home/marc/DATA/Projects/FbPageAnalysis/app/database/engines.py", line 169,
-# in __make_comment    user_name=fbcom.comment_from.name,
-
 if __name__ == '__main__':
     pass
 
 connect('test3')
-# # Initiate hashtables
+tools = DatabaseTools()
+
+
+# Initiate hashtables
 q = Users.objects.all().only('user_id', 'oid')
 DbFactory.users_hashtbl = {user.user_id: user.oid for user in q}
 q = Pages.objects.all().only('page_id', 'oid')
@@ -242,20 +259,11 @@ print len(DbFactory.pages_hashtbl), len(DbFactory.users_hashtbl)
 
 register_connection(alias='politics', name='politics')
 
+flag = 1
 for pid in FB_PAGES_LIST:
     with switch_db(FbPosts, 'politics') as FbPostsProduction:
-        q = FbPostsProduction.get_posts(pageid=pid, batch_size=1)
+        q = FbPostsProduction.get_posts(pageid=pid, flag_ne=flag,batch_size=1)
     print datetime.now(), 'start: ', pid
     for fb_post in q:
-        # print fb_post.postid
-        # print fb_post.id
         x = DbFactory(fbpost=fb_post)
-
-        # fix: flag doesn't work
-        # print fb_post.flag
-        # fb_post.flag = 999
-        # fb_post.save()
-        #
-        # print fb_post.postid
-        # print fb_post.id
-        # print 1 / 0
+        tools.facebook_set_flag(postid=fb_post.postid, flag=flag)

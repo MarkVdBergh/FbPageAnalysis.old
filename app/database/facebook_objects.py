@@ -1,7 +1,7 @@
 import pprint
 
 from mongoengine import EmbeddedDocument, StringField, DictField, BooleanField, DynamicEmbeddedDocument, IntField, EmbeddedDocumentField, \
-    EmbeddedDocumentListField, DynamicDocument, register_connection
+    EmbeddedDocumentListField, DynamicDocument, register_connection, ObjectIdField
 from profilehooks import timecall
 
 from app.settings import TESTING, TESTING_DB, PRODUCTION_DB
@@ -62,7 +62,7 @@ class FbPosts(DynamicDocument):
         meta['db_alias'] = 'default'
     print meta
 
-    # oid = ObjectIdField(db_field='_id', primary_key=True)
+    oid = ObjectIdField(db_field='_id', primary_key=True)
     created_time = IntField(min_value=0, max_value=5000000000, default=-1)  #
     postid = StringField(db_field='id', required=True)  #
     profile = EmbeddedDocumentField(document_type=Profile)  #
@@ -80,13 +80,11 @@ class FbPosts(DynamicDocument):
     type = StringField()  #
     status_type = StringField()  #
     story = StringField()
-    flag=IntField()
-    # update_ts=IntField()
-    # id=ObjectIdField()
+    flag = IntField(default=0)
 
     @classmethod
     @timecall()
-    def get_posts(cls, id_=None, pageid=None, since=None, until=None, batch_size=0, **query):
+    def get_posts(cls, id_=None, pageid=None, since=None, until=None, flag_ne=None, batch_size=0, **query):
         """
             Method to get posts from the database and returns a queryset. All arguments are optional. No arguments returns all the posts from the database.
 
@@ -103,6 +101,7 @@ class FbPosts(DynamicDocument):
         q = cls.objects(**query)
         if id_: q = q(_id=id_)
         if pageid: q = q(profile__id=pageid)
+        if flag_ne: q = q(flag__ne=flag_ne)
         if since: q = q(created_time__gte=since)
         if until: q = q(created_time__lte=until)
         if batch_size: q = q.batch_size(batch_size)  # nr of documentent per db call

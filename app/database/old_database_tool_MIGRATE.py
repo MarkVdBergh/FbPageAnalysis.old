@@ -1,7 +1,7 @@
 from pymongo import DESCENDING
 from pymongo import UpdateOne
 
-from old_mongo_singleton import Mongo
+from mongo_singleton import Mongo
 from tools.old_general_tools import utc_now
 from ..old_settings import MONGO_DATABASE
 

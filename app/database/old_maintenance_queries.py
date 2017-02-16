@@ -1,5 +1,5 @@
+from mongo_singleton import Mongo
 from old_facebook_crud import *
-from old_mongo_singleton import Mongo
 from tools.old_general_tools import timestamp_to_datetime
 
 db = Mongo.get_database()
