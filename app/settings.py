@@ -1,5 +1,6 @@
 # ToDo: Move to __init__.py ?
 
+
 # DATABASE:
 TESTING = True
 PRODUCTION_DB = 'Production'  # should be 'politics'
@@ -13,6 +14,8 @@ TESTING_DB = 'test'
 
 # Facebook Pages
 FB_PAGES_LIST = pageids_pol = [
+
+    '53668151866',  # VLD
     # Kranten
     # '231742536958',  # De Morgen
     # '270994524621',  # VRT De Redactie
@@ -20,13 +23,13 @@ FB_PAGES_LIST = pageids_pol = [
     # '345644812211706',  # Het Laatste Nieuws
 
     # '7133374462',  # De Standaard
-    # '37823307325',  # Het Nieuwsblad
+    #  '37823307325',  # Het Nieuwsblad
     # '10461114902',  # De Tijd
     # '134679853231866',  # Het Pallieterke
     # '443387969094801',  # Newsmonkey
     # '189185831126295',  # Nieuwsuur
     # Nederland
-    '202064936858448',  # Geert Wilders
+    # '202064936858448',  # Geert Wilders
 ]
 
 # FB_PAGES_LIST = pageids_pol = [

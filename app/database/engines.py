@@ -4,13 +4,12 @@ from time import mktime
 
 import pandas as pd
 import pytz
-from bson import ObjectId
 from mongoengine import register_connection, connect
 from mongoengine.context_managers import switch_db
 from profilehooks import timecall
 
 from app.database.facebook_objects import FbPosts
-from app.database.mongo_singleton import MongoFacebook
+from app.database.mongo_singleton import MongoFacebook, MongoFacebookTest
 from app.database.stats_objects import Pages, Users, PostStats, UserActivity, Contents, Comments
 from app.settings import FB_PAGES_LIST
 
@@ -18,36 +17,34 @@ from app.settings import FB_PAGES_LIST
 class DatabaseTools(object):
     def __init__(self):
         self.politics_db = MongoFacebook().get_database()
-        self.facebook_db = self.politics_db['facebook']
+        self.facebook_col = self.politics_db['facebook']
+        self.test_db = MongoFacebookTest().get_database()
+        self.facebook_test_col = self.test_db['facebook']
 
     def facebook_set_flag(self, postid, flag=0):
-        rslt = self.facebook_db.update({'id': postid}, {'$set': {'flag': flag}}, upsert=False)
+        rslt = self.facebook_col.update({'id': postid}, {'$set': {'flag': flag}}, upsert=False)
         return rslt
 
     def facebook_reset_flag(self, page_id=None):
         query = {'flag': {'$ne': 0}}
         if page_id: query.update({'profile.id': page_id})
-        rslt = self.facebook_db.update_many(query, {'$set': {'flag': 0}}, upsert=False)
+        rslt = self.facebook_col.update_many(query, {'$set': {'flag': 0}}, upsert=False)
         return rslt
 
     def facebook_create_flag_field(self):
-        rslt = self.facebook_db.update_many({'flag': {"$exists": False}}, {'$set': {'flag': 0}}, upsert=False)
+        rslt = self.facebook_col.update_many({'flag': {"$exists": False}}, {'$set': {'flag': 0}}, upsert=False)
         return rslt
 
 
-class DatabaseFactory(object):
-    users_hashtbl = {}
-    pages_hashtbl = {}
-    # contents_hashtbl = {}
-    comments_hashtbl = {}
-
+class DatabaseWorker(object):
     @timecall()
+    # @profile()
     def __init__(self, fbpost):
         self.fbpost = fbpost
         # Initiate Pages and Content (need oid's)
         self.content = Contents()
         self.content.content_id = self.fbpost.postid
-        self.content = self.content.upsert_doc()  # Save to get the oid if exist
+        self.content = self.content.upsert_doc(only=['oid', 'content_id'])  # Save to get the oid if exist
         self.poststat = PostStats()
         self.poststat.post_id = self.fbpost.postid
         self.poststat = self.poststat.upsert_doc()  # Save to get the oid if exist
@@ -60,33 +57,28 @@ class DatabaseFactory(object):
 
     def __make_page(self):
         page = Pages()
-        page_ref = self.pages_hashtbl.get(self.fbpost.profile.id)
-        page.oid = page_ref
-        if not page_ref:
-            page.page_id = self.fbpost.profile.id
-            page.name = self.fbpost.profile.name
-            page = page.upsert_doc()
-            self.pages_hashtbl[page.page_id] = page.oid  # Update hashtable
+        page.page_id = self.fbpost.profile.id
+        page.name = self.fbpost.profile.name
+        page = page.upsert_doc(only=['oid'])
         self.page = page
         return None
 
     def __make_poststat(self):
-        poststat = self.poststat  # fix: ugly code
-        poststat.created = datetime.fromtimestamp(self.fbpost.created_time)
-        poststat.post_type = self.fbpost.type
-        poststat.status_type = self.fbpost.status_type
-        poststat.page_ref = self.page.oid
+        self.poststat.created = datetime.fromtimestamp(self.fbpost.created_time)
+        self.poststat.post_type = self.fbpost.type
+        self.poststat.status_type = self.fbpost.status_type
+        self.poststat.page_ref = self.page.oid
         # u_from_ref
         user, _useractivity = self.__make_user(user_id=self.fbpost.from_user.id,
                                                user_name=self.fbpost.from_user.name,
                                                user_picture=None,
-                                               date=poststat.created,
+                                               date=self.poststat.created,
                                                action_type='from')
         user_upsdoc = user.to_mongo().to_dict()
         user_upsdoc.update(push__fromed=_useractivity)
         user_upsdoc.update(inc__tot_fromed=1)
         user = user.upsert_doc(ups_doc=user_upsdoc)
-        poststat.u_from_ref = user.oid
+        self.poststat.u_from_ref = user.oid
         # u_to_ref
         u_to_ref = []
         if self.fbpost.to_user:
@@ -94,16 +86,16 @@ class DatabaseFactory(object):
                 user, _useractivity = self.__make_user(user_id=usr['id'],
                                                        user_name=usr['name'],
                                                        user_picture=None,
-                                                       date=poststat.created,
+                                                       date=self.poststat.created,
                                                        action_type='from')
                 user_upsdoc = user.to_mongo().to_dict()
                 user_upsdoc.update(push__toed=_useractivity)
                 user_upsdoc.update(inc__tot_toed=1)
                 user.upsert_doc(ups_doc=user_upsdoc)
                 u_to_ref.append(user.oid)
-                poststat.u_to_ref = u_to_ref
-        poststat_upsdoc = poststat.to_mongo().to_dict()
-        self.poststat = poststat.upsert_doc(ups_doc=poststat_upsdoc)
+                self.poststat.u_to_ref = u_to_ref
+        poststat_upsdoc = self.poststat.to_mongo().to_dict()
+        self.poststat = self.poststat.upsert_doc(ups_doc=poststat_upsdoc)
         return None
 
     def __make_content(self):
@@ -124,6 +116,7 @@ class DatabaseFactory(object):
         content.nb_comments = len(self.fbpost.comments)
         content.nb_shares = self.fbpost.shares['count']
         content_upsdoc = content.to_mongo().to_dict()
+
         self.content = content.upsert_doc(content_upsdoc)
         return None
 
@@ -131,6 +124,7 @@ class DatabaseFactory(object):
         # u_reacted / nb_reactions
         reacts = [self.fbpost.reactions[r].to_mongo().to_dict() for r in xrange(len(self.fbpost.reactions))]  # Fix: only needed to convert EmbeddedList to list of dics
         if reacts:
+            # Fix: check if reacts[0].get('black..., None) is faster
             if reacts[0].keys() != ['blacklisted']:  # Fix: Scraping
                 df_reacts = pd.DataFrame(reacts)
                 df_reacts['type'] = df_reacts['type'].str.lower()  # LIKE->like
@@ -163,7 +157,14 @@ class DatabaseFactory(object):
         child_oids = []
         parent = parent_oid = None
         for fbcomment in comments:
-            if hasattr(fbcomment, 'blacklisted)'): continue  # Fix: Blacklisted
+            # Fix: Blacklisted
+            if getattr(fbcomment, 'blacklisted)', None): continue   # is faster when the attribute is likely not present
+            # fix: comment liek <Comments: {"updated": {"$date": 1487309377711}, "u_reacted": [], "language": "nl"}> exist !
+            try: # is faster when the attibute is likely present
+                _=fbcomment.id
+            except ArithmeticError:
+                continue
+
             comment = self.__make_comment(fbcomment)
             if teller == -1:  # parent
                 # comment = comment.upsert_doc()  # save parent
@@ -211,7 +212,7 @@ class DatabaseFactory(object):
             user, _useractivity = self.__make_user(user_id=usr['id'],
                                                    user_name=usr['name'],
                                                    date=datetime.fromtimestamp(fbcom.created_time),
-                                                   user_picture=usr['pic'],
+                                                   # user_picture=usr['pic'],
                                                    action_type='comment liked',
                                                    action_subtype=None,
                                                    comment_ref=comment.oid)
@@ -227,14 +228,10 @@ class DatabaseFactory(object):
 
     def __make_user(self, user_id, user_name, user_picture=None, date=None, action_type=None, action_subtype=None, comment_ref=None):
         user = Users()
-        user.oid = self.users_hashtbl.get(user_id)
         user.user_id = user_id
-        if not user.oid:  # User doesn't exist
-            user.oid = ObjectId()  # Fix: is this slow?
-            user.name = user_name
-            user.picture = user_picture
-            user = user.upsert_doc()
-            self.users_hashtbl[user.user_id] = user.oid  # Update hashtable
+        user = user.upsert_doc(only=['oid', 'user_id'])
+        user.name = user_name
+        user.picture = user_picture
         _useractivity = UserActivity()
         _useractivity.date = date
         _useractivity.action_type = action_type
@@ -250,17 +247,13 @@ class DatabaseFactory(object):
 if __name__ == '__main__':
     pass
 
-connect('test3')
-tools = DatabaseTools()
+# Fix: PostStat : no content_ref, np_shares, nb_reactions, reactions, u_reacted, comments, ...
+# Fix: Contentts: no page_ref,
 
-# DatabaseTools().facebook_reset_flag(page_id='202064936858448')
+connect('test5')
+tools = DatabaseTools()
+# DatabaseTools().facebook_reset_flag()
 # 1/0
-# Initiate hashtables
-q = Users.objects.all().only('user_id', 'oid')
-DatabaseFactory.users_hashtbl = {user.user_id: user.oid for user in q}
-q = Pages.objects.all().only('page_id', 'oid')
-DatabaseFactory.pages_hashtbl = {page.page_id: page.oid for page in q}
-print len(DatabaseFactory.pages_hashtbl), len(DatabaseFactory.users_hashtbl)
 
 register_connection(alias='politics', name='politics')
 
@@ -270,90 +263,71 @@ since = mktime(d.timetuple())
 for pid in FB_PAGES_LIST:
     with switch_db(FbPosts, 'politics') as FbPostsProduction:
         q = FbPostsProduction.get_posts(pageid=pid, flag_ne=flag, since=since, batch_size=1)
+        # q = FbPostsProduction.get_posts(oid=ObjectId("58a2eda0d8d09466f8cf594e"))
+        # q = FbPostsProduction.get_posts()
     print datetime.now(), 'start: ', pid
     for fb_post in q:
-        print fb_post.postid
-        x = DatabaseFactory(fbpost=fb_post)
+        # pprint(fb_post)
+        x = DatabaseWorker(fbpost=fb_post)
+        # print BorgCounter.Borg
         tools.facebook_set_flag(postid=fb_post.postid, flag=flag)
 
+# With Hashtables
 """
-Traceback (most recent call last):
-  File "run_engine.py", line 1, in <module>
-    from app.database import engines
-  File "/home/marc/DATA/Projects/FbPageAnalysis/app/database/engines.py", line 271, in <module>
-    x = DatabaseFactory(fbpost=fb_post)
-  File "/home/marc/DATA/.virtualenv/ml/local/lib/python2.7/site-packages/profilehooks.py", line 735, in new_fn
-    return fp(*args, **kw)
-  File "/home/marc/DATA/.virtualenv/ml/local/lib/python2.7/site-packages/profilehooks.py", line 761, in __call__
-    return fn(*args, **kw)
-  File "/home/marc/DATA/Projects/FbPageAnalysis/app/database/engines.py", line 56, in __init__
-    self.__make_reaction()
-  File "/home/marc/DATA/Projects/FbPageAnalysis/app/database/engines.py", line 147, in __make_reaction
-    action_subtype=usr['type'])
-  File "/home/marc/DATA/Projects/FbPageAnalysis/app/database/engines.py", line 234, in __make_user
-    user = user.upsert_doc()
-  File "/home/marc/DATA/Projects/FbPageAnalysis/app/database/stats_objects.py", line 40, in upsert_doc
-    doc = self.__class__.objects(**_uni).upsert_one(**ups_doc)
-  File "/home/marc/DATA/.virtualenv/ml/local/lib/python2.7/site-packages/mongoengine/queryset/base.py", line 540, in upsert_one
-    full_result=True, **update)
-  File "/home/marc/DATA/.virtualenv/ml/local/lib/python2.7/site-packages/mongoengine/queryset/base.py", line 520, in update
-    raise OperationError(u'Update failed (%s)' % six.text_type(err))
-mongoengine.errors.OperationError: Update failed (After applying the update to the document {_id: ObjectId('58a52fe24520006ed1f48ea5') , ...}, the (immutable) field '_id' was found to have been altered to _id: ObjectId('58a5330f4520005c44563cc2'))
+New MongoClient created
+	4 97046
 
+  get_posts (/home/marc/DATA/Projects/FbPageAnalysis/app/database/facebook_objects.py:85):
+    0.001 seconds
+
+2017-02-16 15:30:25.458572 start:  202064936858448
+202064936858448_227859140945694
+
+  __init__ (/home/marc/DATA/Projects/FbPageAnalysis/app/database/engines.py:44):
+    317.396 seconds
+
+202064936858448_228917490839859
+
+  __init__ (/home/marc/DATA/Projects/FbPageAnalysis/app/database/engines.py:44):
+    47.271 seconds
+
+202064936858448_230673523997589
+
+  __init__ (/home/marc/DATA/Projects/FbPageAnalysis/app/database/engines.py:44):
+    82.097 seconds
+
+202064936858448_231050590626549
+
+  __init__ (/home/marc/DATA/Projects/FbPageAnalysis/app/database/engines.py:44):
+    40.722 seconds
 """
 
+# Without hashtables
+"""
+New MongoClient created
 
-# Hashtables
-"""2017-02-16 10:57:51.900886 start:  202064936858448
+  get_posts (/home/marc/DATA/Projects/FbPageAnalysis/app/database/facebook_objects.py:85):
+    0.001 seconds
 
-  __init__ (/home/marc/DATA/Projects/FbPageAnalysis/app/database/engines.py:45):
-    106.009 seconds
+2017-02-16 17:42:42.136167 start:  202064936858448
+202064936858448_227859140945694
 
+  __init__ (/home/marc/DATA/Projects/FbPageAnalysis/app/database/engines.py:44):
+    528.806 seconds
 
-  __init__ (/home/marc/DATA/Projects/FbPageAnalysis/app/database/engines.py:45):
-    14.094 seconds
+202064936858448_228917490839859
 
+  __init__ (/home/marc/DATA/Projects/FbPageAnalysis/app/database/engines.py:44):
+    53.170 seconds
 
-  __init__ (/home/marc/DATA/Projects/FbPageAnalysis/app/database/engines.py:45):
-    26.978 seconds
+202064936858448_230673523997589
 
+  __init__ (/home/marc/DATA/Projects/FbPageAnalysis/app/database/engines.py:44):
+    106.444 seconds
 
-  __init__ (/home/marc/DATA/Projects/FbPageAnalysis/app/database/engines.py:45):
-    15.893 seconds
+202064936858448_231050590626549
 
+  __init__ (/home/marc/DATA/Projects/FbPageAnalysis/app/database/engines.py:44):
+    58.331 seconds
 
-  __init__ (/home/marc/DATA/Projects/FbPageAnalysis/app/database/engines.py:45):
-    31.814 seconds
-
-
-  __init__ (/home/marc/DATA/Projects/FbPageAnalysis/app/database/engines.py:45):
-    9.349 seconds
-
-
-  __init__ (/home/marc/DATA/Projects/FbPageAnalysis/app/database/engines.py:45):
-    15.281 seconds
-
-
-  __init__ (/home/marc/DATA/Projects/FbPageAnalysis/app/database/engines.py:45):
-    21.211 seconds
-
-
-  __init__ (/home/marc/DATA/Projects/FbPageAnalysis/app/database/engines.py:45):
-    9.305 seconds
-
-
-  __init__ (/home/marc/DATA/Projects/FbPageAnalysis/app/database/engines.py:45):
-    8.319 seconds
-
-
-  __init__ (/home/marc/DATA/Projects/FbPageAnalysis/app/database/engines.py:45):
-    10.043 seconds
-
-
-  __init__ (/home/marc/DATA/Projects/FbPageAnalysis/app/database/engines.py:45):
-    7.431 seconds
-
-
-  __init__ (/home/marc/DATA/Projects/FbPageAnalysis/app/database/engines.py:45):
-    30.276 seconds
 """

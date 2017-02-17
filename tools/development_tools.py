@@ -13,6 +13,24 @@ def object_info(object, spacing=10, collapse=1):
         print object_info.__doc__
 
 
+class BorgCounter(object):
+    """
+        A global counter.
+        my_counter=BorgCounter()
+        my_counter() # 0
+        my_counter() # 1
+        print BorgCounter.Borg
+    """
+    Borg = {'theCount': -1}
+
+    def __init__(self):
+        self.__dict__ = BorgCounter.Borg
+
+    def __call__(self):
+        self.theCount += 1
+        return self.theCount
+
+
 def convert_dict_to_update(dictionary, roots=None, return_dict=None):
     """
     See: http://stackoverflow.com/questions/19002469/update-a-mongoengine-document-using-a-python-dict

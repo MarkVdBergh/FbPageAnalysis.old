@@ -4,15 +4,9 @@ from mongoengine import StringField, BooleanField, register_connection, ListFiel
     ObjectIdField, EmbeddedDocument, MapField, EmbeddedDocumentListField, DynamicDocument, DictField
 
 from app.settings import TESTING_DB, PRODUCTION_DB
+from tools.development_tools import BorgCounter
 
-
-# ToDo: Indexes: If you create an index which contains all the fields you would query and all the fields
-# that will be returned by that query, MongoDB will never need to read the data because it's all contained
-# within the index. This significantly reduces the need to fit all data into memory for maximum performance.
-# These are called covered queries. The explain output will show indexOnly as true if you are using a covered query.
-
-
-# Fix: Set all defaults in fields to None otherwise update of missing fields will set them to default
+myCount=BorgCounter()
 class BaseDocument(DynamicDocument):  # Todo: If 'Document iso DynamicDocument, big problems with the oid, _id, id auto_id keys
     meta = {'allow_inheritance': False,
             'abstract': True,
@@ -27,17 +21,22 @@ class BaseDocument(DynamicDocument):  # Todo: If 'Document iso DynamicDocument, 
 
     unique_field = ''  # Used in the 'upsert_doc()' method
 
-    def upsert_doc(self, ups_doc=None):
+    def upsert_doc(self, ups_doc=None, only=None):
+        # myCount()  # Fix: why so manny calls to upsert_doc?
         """
         Upserts a document. If no 'ups_doc' provided, then upserts the object via class variables.
         :param ups_doc: dict: Dictionary keys are upsert fields. More flexible then using object arguments. Ex: {'inc__field':1, ...}
         :return: obj : The upserted class object
         """
         # pprint(ups_doc)
-        if not ups_doc: ups_doc = self.to_mongo().to_dict()  # Todo: Isn't it better to only accept ups_doc?
+        if not ups_doc: ups_doc = self.to_mongo().to_dict()
         ups_doc['updated'] = datetime.utcnow()  # Update time for each upsert
         _uni = {self.unique_field: ups_doc[self.unique_field]}
-        doc = self.__class__.objects(**_uni).upsert_one(**ups_doc)
+        q = self.__class__.objects(**_uni)
+        if only:
+            for o in only:
+                q = q.only(o)
+        doc = q.upsert_one(**ups_doc)
         return doc
 
     def get_doc_from_ref(self, ref):
@@ -155,6 +154,18 @@ class PostStats(BaseDocument):
     nb_comments = IntField()
 
     unique_field = 'post_id'  # Used in the 'upsert_doc()' method
+
+
+def create_test_documents():
+   pass
+
+
+
+
+
+
+
+
 
 
 if __name__ == '__main__':
